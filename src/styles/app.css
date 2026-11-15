@@ -346,21 +346,39 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
 .acceso-movil { display: grid; gap: 16px; margin-bottom: 22px; }
 .acceso-movil .tira { height: 26px; width: 100%; }
 .tira { display: block; width: 100%; height: 90px; }
-.acceso-tipos { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 5px; background: #12151d; border: 1px solid #232838; border-radius: 14px; }
-.acceso-tipos button { all: unset; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; border-radius: 10px; font-weight: 700; font-size: 15.5px; color: #aab3c8; text-align: center; }
+.acceso-tipos { position: relative; isolation: isolate; display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 5px; background: #12151d; border: 1px solid #232838; border-radius: 14px; }
+.acceso-tipos button { all: unset; position: relative; z-index: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; border-radius: 10px; font-weight: 700; font-size: 15.5px; color: #8d97ae; text-align: center; transition: color .35s ease; -webkit-tap-highlight-color: transparent; }
+.acceso-tipos button:hover { color: #c9d1e6; }
+.acceso-tipos button.on { color: #fff; }
+.acceso-tipos button svg { transition: transform .4s cubic-bezier(.3, 1.6, .5, 1); }
+.acceso-tipos button.on svg { transform: scale(1.12) rotate(-6deg); }
 .acceso-tipos button:focus-visible { outline: 2px solid #8fb2ff; outline-offset: 2px; }
-.acceso-tipos button.on { background: #2563eb; color: #fff; }
-.acceso-caja h1 { font-size: 28px; line-height: 1.12; letter-spacing: -.02em; font-weight: 700; margin: 26px 0 6px; }
-.acceso-sub { color: #aab3c8; font-size: 16.5px; line-height: 1.4; margin-bottom: 20px; }
+/* Pastilla que se desliza y se estira al pasar de un lado al otro, mezclando de azul a violeta */
+.acceso-ind {
+  position: absolute; z-index: 0; top: 5px; bottom: 5px; left: 5px; width: calc(50% - 5px); border-radius: 10px;
+  background: linear-gradient(90deg, #2563eb 0%, #3b6cf0 40%, #6d4df0 100%); background-size: 200% 100%;
+  box-shadow: 0 6px 18px -6px rgba(80, 90, 240, .65); transform-origin: left center;
+}
+.acceso-tipos.es-barbero .acceso-ind { transform: translateX(0); background-position: 0% 0; }
+.acceso-tipos.es-barbero.movido .acceso-ind { animation: ind-izq .55s cubic-bezier(.4, .1, .2, 1) both; }
+.acceso-tipos.es-admin .acceso-ind { transform: translateX(100%); background-position: 100% 0; }
+.acceso-tipos.es-admin.movido .acceso-ind { animation: ind-der .55s cubic-bezier(.4, .1, .2, 1) both; }
+@keyframes ind-der { 0% { transform: translateX(0) scaleX(1); background-position: 0% 0; } 45% { transform: translateX(28%) scaleX(1.5); background-position: 55% 0; } 100% { transform: translateX(100%) scaleX(1); background-position: 100% 0; } }
+@keyframes ind-izq { 0% { transform: translateX(100%) scaleX(1); background-position: 100% 0; } 45% { transform: translateX(22%) scaleX(1.5); background-position: 45% 0; } 100% { transform: translateX(0) scaleX(1); background-position: 0% 0; } }
+.fundir { animation: fundir .4s ease both; }
+@keyframes fundir { from { opacity: 0; transform: translateY(5px); } }
+@media (prefers-reduced-motion: reduce) { .acceso-ind, .fundir { animation: none !important; } .acceso-tipos button svg { transition: none; } }
+.acceso-caja h1 { font-size: clamp(22px, 7vw, 28px); line-height: 1.12; letter-spacing: -.02em; font-weight: 700; margin: 22px 0 6px; white-space: nowrap; }
+.acceso-sub { color: #aab3c8; font-size: 16px; line-height: 1.4; margin-bottom: 18px; min-height: 2.8em; }
 .acceso-kicker { font-size: 12.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--oro); }
-.acceso-caja form { display: grid; gap: 16px; }
+.acceso-caja form { display: grid; gap: 14px; }
 .acceso-caja .campo { font-size: 15.5px; gap: 8px; }
 .acceso-caja .campo > span { color: #e6eaf5; font-weight: 700; }
-.acceso-caja .campo input { min-height: 56px; font-size: 17px; border-radius: 14px; border: 1.5px solid #2e3550; background: #0d1018; color: #fff; }
-.acceso-caja .btn { width: 100%; min-height: 58px; font-size: 17.5px; border-radius: 14px; font-weight: 700; margin-top: 4px; }
+.acceso-caja .campo input { min-height: 52px; font-size: 17px; border-radius: 14px; border: 1.5px solid #2e3550; background: #0d1018; color: #fff; }
+.acceso-caja .btn { width: 100%; min-height: 54px; font-size: 17.5px; border-radius: 14px; font-weight: 700; margin-top: 4px; }
 .acceso-caja > .btn + .btn { margin-top: 10px; }
 .acceso-caja > .btn:first-of-type { margin-top: 10px; }
-.acceso-pie { margin-top: 20px; color: #8d97ae; font-size: 15px; text-align: center; }
+.acceso-pie { margin-top: 16px; color: #8d97ae; font-size: 15px; text-align: center; min-height: 2.8em; }
 .acceso-caja .enlace-volver { justify-self: center; margin-top: 10px; color: #aab3c8; }
 @media (min-width: 860px) {
   .acceso { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
@@ -370,9 +388,10 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
   .puntos { list-style: none; display: grid; gap: 16px; margin-top: 28px; }
   .puntos li { display: flex; gap: 14px; align-items: flex-start; font-size: 18px; line-height: 1.35; color: #dbe2f3; }
   .puntos b { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 10px; background: #1a2a55; color: #8fb2ff; font-size: 16px; }
-  .acceso-form { place-items: center; padding: 40px 28px; }
+  .acceso-form { place-items: center; padding: 24px 28px; }
   .acceso-movil { display: none; }
-  .acceso-caja h1 { font-size: 32px; margin-top: 30px; }
+  .acceso-caja h1 { font-size: 30px; margin-top: 24px; }
+  .acceso-caja { min-height: 548px; align-content: start; }
 }
 
 /* ---------- Secciones plegables y fichas de solo lectura ---------- */

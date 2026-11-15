@@ -33,6 +33,7 @@ export default function Login() {
 
   const sinAcceso = !cargando && sesion && !perfil && !esAdmin;
 
+  const [movido, setMovido] = useState(false);
   const esBarbero = tipo === "barbero";
 
   return (
@@ -46,7 +47,8 @@ export default function Login() {
           </div>
 
           {!sinAcceso && (
-            <div className="acceso-tipos" role="tablist" aria-label="Tipo de acceso">
+            <div className={`acceso-tipos ${esBarbero ? "es-barbero" : "es-admin"}${movido ? " movido" : ""}`} role="tablist" aria-label="Tipo de acceso">
+              <i className="acceso-ind" key={tipo} aria-hidden="true" />
               <button
                 type="button"
                 role="tab"
@@ -54,6 +56,7 @@ export default function Login() {
                 className={esBarbero ? "on" : ""}
                 onClick={() => {
                   setTipo("barbero");
+                  setMovido(true);
                   setError("");
                 }}
               >
@@ -67,6 +70,7 @@ export default function Login() {
                 className={!esBarbero ? "on" : ""}
                 onClick={() => {
                   setTipo("admin");
+                  setMovido(true);
                   setError("");
                 }}
               >
@@ -76,8 +80,8 @@ export default function Login() {
             </div>
           )}
 
-          <h1>{esBarbero ? "Acceso barberos" : "Acceso administración"}</h1>
-          <p className="acceso-sub">
+          <h1 key={`h-${tipo}`} className="fundir">{esBarbero ? "Acceso barberos" : "Acceso administración"}</h1>
+          <p key={`s-${tipo}`} className="acceso-sub fundir">
             {esBarbero
               ? "Entra para ver tu agenda del día y tus citas."
               : "Para dueños de barbería y administradores de Fade Studio."}
@@ -132,7 +136,7 @@ export default function Login() {
             </form>
           )}
 
-          <p className="acceso-pie">
+          <p key={`p-${tipo}`} className="acceso-pie fundir">
             {esBarbero ? "¿Problemas para entrar? Pídele tu clave al administrador." : "¿Olvidaste tu clave? Escríbenos y la restablecemos."}
           </p>
           <Link to="/" className="enlace-volver">
