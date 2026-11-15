@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { claveAleatoria, llamarEquipo } from "../../lib/equipo";
@@ -20,8 +21,12 @@ export default function Equipo() {
   const [error, setError] = useState("");
   const [nuevo, setNuevo] = useState(false);
   const [editar, setEditar] = useState<Perfil | null>(null);
+  const [cupo, setCupo] = useState<{ plan: string; limite: number | null; usados: number } | null>(null);
+  const lleno = cupo?.limite != null && cupo.usados >= cupo.limite;
 
   const cargar = useCallback(async () => {
+    const rc = await supabase.rpc("cupo_equipo");
+    setCupo((rc.data as typeof cupo) ?? null);
     const { data, error: err } = await supabase.from("perfiles").select(CAMPOS).order("rol").order("nombre");
     if (err) return setError("No pudimos cargar el equipo. Revisa tu conexión.");
     setError("");
@@ -64,7 +69,23 @@ export default function Equipo() {
       </ul>
       {gente && gente.length === 0 && <div className="vacio">Todavía no hay equipo.</div>}
 
-      <button className="btn btn-primario btn-ancho" style={{ marginTop: 18 }} onClick={() => setNuevo(true)}>
+      {cupo?.limite != null && (
+        <div className={`cupo${lleno ? " lleno" : ""}`}>
+          <div>
+            <b>
+              {cupo.usados} de {cupo.limite} barbero adicional
+            </b>
+            <small>{lleno ? "Tu plan Básico ya usa su cupo. Con Pro puedes sumar más barberos." : "Tu plan Básico incluye 1 barbero además de ti."}</small>
+          </div>
+          {lleno && (
+            <Link to="/contratar?plan=pro" className="btn btn-borde btn-chico">
+              Ver plan Pro
+            </Link>
+          )}
+        </div>
+      )}
+
+      <button className="btn btn-primario btn-ancho" style={{ marginTop: 14 }} disabled={lleno} onClick={() => setNuevo(true)}>
         <Icon nombre="users" size={20} />
         Agregar barbero
       </button>
@@ -224,6 +245,7 @@ function EditarPersona({
       .eq("id", persona.id)
       .select("id");
     setOcupado(false);
+    if (err && /LIMITE_PLAN/.test(err.message)) return setError("Tu plan Básico permite 1 barbero adicional. Pásate a Pro para sumar más.");
     if (err || !data || data.length === 0) return setError("No se pudo guardar.");
     avisar("Cambios guardados");
     onListo();
