@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { clp } from "../../lib/dinero";
 import { aSlug, estadoSuscripcion, fechaMes } from "../../lib/admin";
@@ -8,17 +8,28 @@ import { claveAleatoria, llamarFuncion } from "../../lib/equipo";
 import { hoyChile } from "../../lib/fecha";
 import type { BarberiaAdmin, PagoSuscripcion, Plan } from "../../lib/types";
 import { PLAN_LABEL } from "../../lib/types";
+import { DIAS_PRUEBA, usePlanes } from "../../lib/planes";
+import type { Solicitud } from "./Solicitudes";
 import { useToast } from "../../components/Toast";
 import Hoja from "../../components/Hoja";
 import Icon from "../../components/Icon";
 
-const PRECIO_PLAN: Record<Plan, number> = { basico: 12000, completo: 25000 };
 
 export default function Barberias() {
   const [q, setQ] = useSearchParams();
   const [lista, setLista] = useState<BarberiaAdmin[] | null>(null);
   const [error, setError] = useState("");
   const [nueva, setNueva] = useState(false);
+  const [desdeSolicitud, setDesdeSolicitud] = useState<Solicitud | null>(null);
+  const ubicacion = useLocation();
+  const nav = useNavigate();
+  useEffect(() => {
+    const sol = (ubicacion.state as { solicitud?: Solicitud } | null)?.solicitud;
+    if (!sol) return;
+    setDesdeSolicitud(sol);
+    setNueva(true);
+    nav(ubicacion.pathname, { replace: true, state: null }); // limpia el estado para no reabrir al volver
+  }, [ubicacion.state, ubicacion.pathname, nav]);
 
   const cargar = useCallback(async () => {
     const { data, error: err } = await supabase.rpc("admin_barberias");
@@ -71,7 +82,11 @@ export default function Barberias() {
 
       {nueva && (
         <Nueva
-          onCerrar={() => setNueva(false)}
+          inicial={desdeSolicitud}
+          onCerrar={() => {
+            setNueva(false);
+            setDesdeSolicitud(null);
+          }}
           onListo={() => {
             setNueva(false);
             void cargar();
@@ -85,21 +100,29 @@ export default function Barberias() {
 
 /* ---------------------------------------------------------------- nueva */
 
-function Nueva({ onCerrar, onListo }: { onCerrar: () => void; onListo: () => void }) {
+function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: () => void; inicial: Solicitud | null }) {
   const avisar = useToast();
+  const planes = usePlanes();
+  const precioDe = (p: Plan) => planes.find((x) => x.clave === p)?.precio_mensual ?? 0;
   const hoy = hoyChile();
-  const [nombre, setNombre] = useState("");
-  const [slug, setSlug] = useState("");
+  const [nombre, setNombre] = useState(inicial?.nombre_barberia ?? "");
+  const [slug, setSlug] = useState(inicial ? aSlug(inicial.nombre_barberia) : "");
   const [slugEditado, setSlugEditado] = useState(false);
-  const [plan, setPlan] = useState<Plan>("basico");
-  const [precio, setPrecio] = useState(String(PRECIO_PLAN.basico));
-  const [prueba, setPrueba] = useState("14");
-  const [dueno, setDueno] = useState("");
-  const [correo, setCorreo] = useState("");
+  const [plan, setPlan] = useState<Plan>(inicial?.plan ?? "basico");
+  const [precio, setPrecio] = useState("");
+  const [precioTocado, setPrecioTocado] = useState(false);
+  const [prueba, setPrueba] = useState(inicial && inicial.ciclo !== "prueba" ? "0" : String(DIAS_PRUEBA));
+  const [dueno, setDueno] = useState(inicial?.contacto ?? "");
+  const [correo, setCorreo] = useState(inicial?.correo ?? "");
   const [clave, setClave] = useState(claveAleatoria());
   const [error, setError] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [creada, setCreada] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!precioTocado) setPrecio(String(precioDe(plan)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan, planes, precioTocado]);
 
   const vence = (() => {
     const n = Math.max(0, Math.round(Number(prueba) || 0));
@@ -125,6 +148,7 @@ function Nueva({ onCerrar, onListo }: { onCerrar: () => void; onListo: () => voi
     });
     setOcupado(false);
     if (motivo) return setError(motivo);
+    if (inicial) await supabase.rpc("admin_estado_solicitud", { p_id: inicial.id, p_estado: "creada" });
     avisar("Barbería creada");
     setCreada(slug);
   };
@@ -199,18 +223,28 @@ function Nueva({ onCerrar, onListo }: { onCerrar: () => void; onListo: () => voi
             <select
               value={plan}
               onChange={(e) => {
-                const p = e.target.value as Plan;
-                setPlan(p);
-                setPrecio(String(PRECIO_PLAN[p]));
+                setPlan(e.target.value as Plan);
+                setPrecioTocado(false);
               }}
             >
               <option value="basico">Básico</option>
-              <option value="completo">Completo</option>
+              <option value="pro">Pro</option>
+              <option value="vip">VIP</option>
             </select>
           </label>
           <label className="campo">
             <span>Precio al mes</span>
-            <input type="number" inputMode="numeric" min={0} value={precio} onChange={(e) => setPrecio(e.target.value)} required />
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={precio}
+              onChange={(e) => {
+                setPrecio(e.target.value);
+                setPrecioTocado(true);
+              }}
+              required
+            />
           </label>
         </div>
         <label className="campo">
@@ -447,7 +481,8 @@ function Editar({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
           <span>Plan</span>
           <select value={plan} onChange={(e) => setPlan(e.target.value as Plan)}>
             <option value="basico">Básico</option>
-            <option value="completo">Completo</option>
+            <option value="pro">Pro</option>
+            <option value="vip">VIP</option>
           </select>
         </label>
         <label className="campo">

@@ -18,6 +18,9 @@ import Landing from "./pages/Landing";
 import Vencida from "./pages/Vencida";
 import Resumen from "./pages/admin/Resumen";
 import Barberias from "./pages/admin/Barberias";
+import Solicitudes from "./pages/admin/Solicitudes";
+import Planes from "./pages/admin/Planes";
+import Contratar from "./pages/Contratar";
 import { SLUG_DEFECTO } from "./lib/publico";
 
 const PESTANAS_DUENO: Pestana[] = [
@@ -30,6 +33,8 @@ const PESTANAS_DUENO: Pestana[] = [
 const PESTANAS_ADMIN: Pestana[] = [
   { ruta: "/admin/resumen", texto: "Resumen", icono: "home" },
   { ruta: "/admin/barberias", texto: "Barberías", icono: "shop" },
+  { ruta: "/admin/solicitudes", texto: "Solicitudes", icono: "inbox" },
+  { ruta: "/admin/planes", texto: "Planes", icono: "tag" },
 ];
 const PESTANAS_BARBERO: Pestana[] = [
   { ruta: "/panel/agenda", texto: "Agenda", icono: "cal" },
@@ -79,6 +84,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={SLUG_DEFECTO ? <Home /> : <Landing />} />
       <Route path="/fade-studio" element={<Landing />} />
+      <Route path="/contratar" element={<Contratar />} />
       <Route path="/reservar" element={<Reservar />} />
       <Route path="/reserva/:codigo" element={<Reserva />} />
       <Route path="/b/:slug" element={<Home />} />
@@ -91,6 +97,8 @@ export default function App() {
         <Route element={<Shell pestanas={PESTANAS_ADMIN} />}>
           <Route path="resumen" element={<Resumen />} />
           <Route path="barberias" element={<Barberias />} />
+          <Route path="solicitudes" element={<Solicitudes />} />
+          <Route path="planes" element={<Planes />} />
         </Route>
       </Route>
 

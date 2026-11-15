@@ -90,8 +90,8 @@ export type Servicio = {
 
 export type Barbero = { id: string; nombre: string; iniciales: string };
 
-export type Plan = "basico" | "completo";
-export const PLAN_LABEL: Record<Plan, string> = { basico: "Básico", completo: "Completo" };
+export type Plan = "basico" | "pro" | "vip";
+export const PLAN_LABEL: Record<Plan, string> = { basico: "Básico", pro: "Pro", vip: "VIP" };
 
 /** Estado de la suscripción de la barbería de quien inició sesión. */
 export type BarberiaInfo = {
