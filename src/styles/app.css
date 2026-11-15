@@ -120,8 +120,8 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
 .perfil-foto { display: grid; justify-items: center; gap: 12px; padding: 26px 0 8px; }
 .perfil-foto .acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .perfil-grid { display: grid; gap: 12px; margin-top: 14px; }
-.perfil-grid .fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 360px) { .perfil-grid .fila2 { grid-template-columns: 1fr; } }
+.ficha .fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 360px) { .ficha .fila2 { grid-template-columns: 1fr; } }
 
 /* Barra inferior */
 .pestanas {
@@ -374,3 +374,65 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
   .acceso-movil { display: none; }
   .acceso-caja h1 { font-size: 32px; margin-top: 30px; }
 }
+
+/* ---------- Secciones plegables y fichas de solo lectura ---------- */
+.plegable { background: var(--s1); border: 1px solid var(--line); border-radius: 18px; margin-top: 12px; overflow: hidden; }
+.plegable.abierta { border-color: #2c3350; }
+.plegable-cab { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; min-height: 64px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.plegable-cab:hover { background: rgba(255, 255, 255, .02); }
+.plegable-cab:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; border-radius: 18px; }
+.plegable-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--s2); color: var(--mut); flex: none; }
+.plegable.abierta .plegable-ico { color: var(--oro); }
+.plegable-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.plegable-txt b { font-size: 16px; font-weight: 600; }
+.plegable-txt small { color: var(--mut); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plegable-flecha { color: var(--mut); display: grid; transition: transform .25s; flex: none; }
+.plegable.abierta .plegable-flecha { transform: rotate(180deg); }
+.plegable-cuerpo { padding: 2px 16px 18px; display: grid; gap: 14px; animation: aparece .2s both; }
+.ficha { display: grid; gap: 12px; }
+.ficha-datos { margin: 0; border: 1px solid var(--line); border-radius: 14px; padding: 2px 14px; background: var(--bg); }
+.ficha-datos div { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.ficha-datos div:last-child { border-bottom: 0; }
+.ficha-datos dt { color: var(--mut); flex: none; }
+.ficha-datos dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; min-width: 0; }
+.ficha-vacio { color: var(--mut); font-weight: 400; }
+.ficha-editar { justify-self: start; gap: 8px; }
+.ficha-botones { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+
+/* Pestañas dentro de una página */
+.pestanitas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; padding: 5px; background: var(--s1); border: 1px solid var(--line); border-radius: 14px; margin: 14px 0; }
+.pestanitas button { all: unset; box-sizing: border-box; cursor: pointer; text-align: center; min-height: 44px; display: grid; place-items: center; padding: 0 8px; border-radius: 10px; font-weight: 600; font-size: 14.5px; color: var(--mut); transition: background-color .2s, color .2s; }
+.pestanitas button.on { background: var(--s2); color: var(--tx); box-shadow: inset 0 0 0 1px #2c3350; }
+.pestanitas button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+/* Tarjetas antiguas dentro de una sección: sin borde propio ni título repetido */
+.plegable-cuerpo > .tarjeta { background: none; border: 0; padding: 0; margin: 0; }
+.plegable-cuerpo > .tarjeta > h2:first-child { display: none; }
+
+/* ---------- Selector de día (semana + calendario) ---------- */
+.selector-dia { margin: 14px 0 10px; display: grid; gap: 10px; }
+.selector-barra { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.selector-barra .icono-btn.chico { width: 40px; height: 40px; border-radius: 12px; }
+.selector-barra .icono-btn.chico:last-child svg { transform: rotate(180deg); }
+.selector-titulo { font-weight: 600; font-size: 15.5px; text-align: center; flex: 1; }
+.selector-semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.selector-semana button { all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: grid; gap: 1px; justify-items: center; padding: 8px 0 7px; border-radius: 12px; border: 1px solid var(--line); background: var(--s1); color: var(--mut); transition: background-color .2s, color .2s, border-color .2s; -webkit-tap-highlight-color: transparent; }
+.selector-semana button small { font-size: 11.5px; font-weight: 500; }
+.selector-semana button b { font-size: 17px; font-weight: 700; color: var(--tx); }
+.selector-semana button.hoy { border-color: #4a5a8c; }
+.selector-semana button.hoy::after { content: ""; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--oro); }
+.selector-semana button.on { background: var(--btn); border-color: var(--btn); color: #fff; }
+.selector-semana button.on b { color: #fff; }
+.selector-semana button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.selector-semana button i { display: none; }
+.selector-acciones { position: relative; display: flex; gap: 8px; }
+.selector-acciones .btn { gap: 6px; }
+.selector-fecha { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* Filtro por barbero */
+.filtro-barberos { display: flex; gap: 6px; overflow-x: auto; margin: 4px -16px 10px; padding: 0 16px 4px; scrollbar-width: none; }
+.filtro-barberos::-webkit-scrollbar { display: none; }
+.filtro-barberos button { all: unset; box-sizing: border-box; flex: none; cursor: pointer; min-height: 38px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid var(--line); background: var(--s1); color: var(--mut); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.filtro-barberos button.on { background: var(--s2); color: var(--tx); border-color: #4a5a8c; }
+.filtro-barberos button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.agenda-scroll { overflow-x: auto; margin-right: -16px; padding-right: 16px; }

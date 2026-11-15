@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent } from "react";
 import Avatar, { iniciales } from "../components/Avatar";
-import CambiarClave from "../components/CambiarClave";
+import { FormularioClave } from "../components/CambiarClave";
+import Ficha from "../components/Ficha";
+import { formatearTelefono } from "../lib/whatsapp";
 import Icon from "../components/Icon";
 import { useToast } from "../components/Toast";
 import { guardarDatos, quitarFoto, subirFoto, useMiPerfil } from "../lib/perfil";
+type Pestana = "datos" | "clave";
 const ROL_TEXTO = { dueno: "Dueño", barbero: "Barbero", superadmin: "Superadmin" } as const;
 
 /** «Mi perfil»: foto y datos personales. Sirve para Dueño, Barbero y Superadmin. */
@@ -14,9 +17,10 @@ export default function Perfil() {
   const archivo = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [tab, setTab] = useState<Pestana>("datos");
   const [f, setF] = useState({ nombre: "", apellidos: "", telefono: "", edad: "" });
 
-  useEffect(() => {
+  const restaurar = () => {
     if (!datos) return;
     setF({
       nombre: datos.nombre,
@@ -24,7 +28,8 @@ export default function Perfil() {
       telefono: datos.telefono,
       edad: datos.edad ? String(datos.edad) : "",
     });
-  }, [datos]);
+  };
+  useEffect(restaurar, [datos]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!datos) return <p className="mut" style={{ marginTop: 20 }}>Cargando…</p>;
   const rojo = datos.rol === "superadmin";
@@ -58,19 +63,20 @@ export default function Perfil() {
     }
   }
 
-  async function guardar(e: FormEvent) {
-    e.preventDefault();
+  async function guardar(): Promise<boolean> {
     const edad = f.edad.trim() === "" ? null : Number(f.edad);
     if (edad !== null && (!Number.isInteger(edad) || edad < 10 || edad > 110)) {
       avisar("Revisa tu edad", "error");
-      return;
+      return false;
     }
     setGuardando(true);
     try {
       await guardarDatos({ nombre: f.nombre, apellidos: f.apellidos, telefono: f.telefono, edad });
       avisar("Datos guardados");
+      return true;
     } catch (err) {
       avisar((err as Error).message, "error");
+      return false;
     } finally {
       setGuardando(false);
     }
@@ -99,38 +105,54 @@ export default function Perfil() {
         </div>
       </div>
 
-      <form className="perfil-grid" onSubmit={guardar}>
-        <div className="fila2">
-          <label className="campo">
-            <span>Nombre</span>
-            <input value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} maxLength={60} autoComplete="given-name" required />
-          </label>
-          <label className="campo">
-            <span>Apellidos</span>
-            <input value={f.apellidos} onChange={(e) => setF({ ...f, apellidos: e.target.value })} maxLength={60} autoComplete="family-name" />
-          </label>
-        </div>
-        <div className="fila2">
-          <label className="campo">
-            <span>Celular</span>
-            <input value={f.telefono} onChange={(e) => setF({ ...f, telefono: e.target.value })} inputMode="tel" placeholder="+56 9 1234 5678" autoComplete="tel" />
-          </label>
-          <label className="campo">
-            <span>Edad</span>
-            <input value={f.edad} onChange={(e) => setF({ ...f, edad: e.target.value.replace(/\D/g, "").slice(0, 3) })} inputMode="numeric" placeholder="Ej: 28" />
-          </label>
-        </div>
-        <label className="campo">
-          <span>Correo</span>
-          <input value={datos.correo ?? ""} readOnly disabled />
-          <small>Es el correo con el que entras. No se cambia aquí.</small>
-        </label>
-        <button className="btn btn-primario" disabled={guardando}>
-          {guardando ? "Guardando…" : "Guardar datos"}
+      <div className="pestanitas" role="tablist" aria-label="Mi perfil">
+        <button role="tab" aria-selected={tab === "datos"} className={tab === "datos" ? "on" : ""} onClick={() => setTab("datos")}>
+          Mis datos
         </button>
-      </form>
+        <button role="tab" aria-selected={tab === "clave"} className={tab === "clave" ? "on" : ""} onClick={() => setTab("clave")}>
+          Cambiar mi clave
+        </button>
+      </div>
 
-      <CambiarClave />
+      {tab === "datos" ? (
+        <Ficha
+          filas={[
+            { etiqueta: "Nombre", valor: datos.nombre },
+            { etiqueta: "Apellidos", valor: datos.apellidos },
+            { etiqueta: "Celular", valor: datos.telefono ? formatearTelefono(datos.telefono) : "" },
+            { etiqueta: "Edad", valor: datos.edad ? `${datos.edad} años` : "" },
+            { etiqueta: "Correo", valor: datos.correo },
+          ]}
+          onGuardar={guardar}
+          onCancelar={restaurar}
+          guardando={guardando}
+          textoEditar="Editar mis datos"
+        >
+          <div className="fila2">
+            <label className="campo">
+              <span>Nombre</span>
+              <input value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} maxLength={60} autoComplete="given-name" required />
+            </label>
+            <label className="campo">
+              <span>Apellidos</span>
+              <input value={f.apellidos} onChange={(e) => setF({ ...f, apellidos: e.target.value })} maxLength={60} autoComplete="family-name" />
+            </label>
+          </div>
+          <div className="fila2">
+            <label className="campo">
+              <span>Celular</span>
+              <input value={f.telefono} onChange={(e) => setF({ ...f, telefono: e.target.value })} inputMode="tel" placeholder="+56 9 1234 5678" autoComplete="tel" />
+            </label>
+            <label className="campo">
+              <span>Edad</span>
+              <input value={f.edad} onChange={(e) => setF({ ...f, edad: e.target.value.replace(/\D/g, "").slice(0, 3) })} inputMode="numeric" placeholder="Ej: 28" />
+            </label>
+          </div>
+          <p className="suave chico">El correo es con el que entras y no se cambia aquí.</p>
+        </Ficha>
+      ) : (
+        <FormularioClave conTitulo={false} onListo={() => setTab("datos")} />
+      )}
     </>
   );
 }

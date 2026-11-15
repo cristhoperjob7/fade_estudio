@@ -15,18 +15,26 @@ const CLAVES: PlanClave[] = ["basico", "pro", "vip"];
 const esPlan = (x: string | null): x is PlanClave => !!x && (CLAVES as string[]).includes(x);
 const esCiclo = (x: string | null): x is Ciclo => x === "mensual" || x === "anual" || x === "prueba";
 
-const CICLOS: { v: Ciclo; t: string }[] = [
+const CICLOS_PAGO: { v: Ciclo; t: string }[] = [
   { v: "mensual", t: "Mensual" },
   { v: "anual", t: "Anual" },
-  { v: "prueba", t: `Probar ${DIAS_PRUEBA} días` },
 ];
+/** La prueba gratis es solo para el plan Básico. */
+const CICLO_PRUEBA: { v: Ciclo; t: string } = { v: "prueba", t: `Probar ${DIAS_PRUEBA} días` };
 
 /** Proceso de contratación: elegir plan, dejar tus datos y listo. */
 export default function Contratar() {
   const [q] = useSearchParams();
   const precios = usePlanes();
-  const [plan, setPlan] = useState<PlanClave>(esPlan(q.get("plan")) ? (q.get("plan") as PlanClave) : "pro");
-  const [ciclo, setCiclo] = useState<Ciclo>(esCiclo(q.get("ciclo")) ? (q.get("ciclo") as Ciclo) : "mensual");
+  const planInicial: PlanClave = esPlan(q.get("plan")) ? (q.get("plan") as PlanClave) : q.get("ciclo") === "prueba" ? "basico" : "pro";
+  const cicloPedido: Ciclo = esCiclo(q.get("ciclo")) ? (q.get("ciclo") as Ciclo) : "mensual";
+  const [plan, setPlanSel] = useState<PlanClave>(planInicial);
+  const [ciclo, setCiclo] = useState<Ciclo>(cicloPedido === "prueba" && planInicial !== "basico" ? "mensual" : cicloPedido);
+  const cambiarPlan = (c: PlanClave) => {
+    setPlanSel(c);
+    if (c !== "basico" && ciclo === "prueba") setCiclo("mensual");
+  };
+  const CICLOS = plan === "basico" ? [...CICLOS_PAGO, CICLO_PRUEBA] : CICLOS_PAGO;
   const [barberia, setBarberia] = useState("");
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -146,7 +154,7 @@ export default function Contratar() {
                       role="radio"
                       aria-checked={plan === d.clave}
                       className={`fs-opc fs-opc-${d.clave}${plan === d.clave ? " on" : ""}`}
-                      onClick={() => setPlan(d.clave)}
+                      onClick={() => cambiarPlan(d.clave)}
                     >
                       <b>{pr.nombre}</b>
                       <small>
@@ -158,7 +166,7 @@ export default function Contratar() {
                 })}
               </div>
 
-              <div className="fs-ciclos" role="radiogroup" aria-label="Forma de pago">
+              <div className="fs-ciclos" role="radiogroup" aria-label="Forma de pago" style={{ gridTemplateColumns: `repeat(${CICLOS.length}, 1fr)` }}>
                 {CICLOS.map((c) => (
                   <button
                     key={c.v}
@@ -172,6 +180,9 @@ export default function Contratar() {
                   </button>
                 ))}
               </div>
+              {plan !== "basico" && (
+                <p className="fs-nota-prueba">La prueba gratis de {DIAS_PRUEBA} días es solo del plan Básico. Puedes pasarte a Pro o VIP cuando quieras.</p>
+              )}
 
               <article className={`fs-carta fs-carta${k} fs-carta-resumen`}>
                 <div className="fs-carta-in">

@@ -24,7 +24,7 @@ const PREGUNTAS: { p: string; r: string }[] = [
   { p: "¿Mis clientes tienen que crear una cuenta?", r: "No. Reservan con su nombre y su teléfono, nada más." },
   { p: "¿Cómo me llega la plata?", r: "Directo a tu cuenta, por transferencia. Tú ves el comprobante y apruebas." },
   { p: "¿Tengo que instalar algo?", r: "No. Funciona desde el navegador y se puede dejar como ícono en el celular." },
-  { p: "¿Cómo parto?", r: "Nos escribes por WhatsApp, creamos tu barbería y te entregamos tu link y tu clave. Parte con una prueba gratis." },
+  { p: "¿Cómo parto?", r: "Nos escribes por WhatsApp, creamos tu barbería y te entregamos tu link y tu clave. Puedes partir con 7 días gratis en el plan Básico." },
 ];
 
 const PASOS: { i: Ico; t: string }[] = [
@@ -122,7 +122,7 @@ function Celular() {
 
 /** Texto de los mensajes de la conversación de ejemplo. */
 const CHAT: { de: "tu" | "fs"; t: string }[] = [
-  { de: "tu", t: "Hola, quiero probar Fade Studio 7 días" },
+  { de: "tu", t: "Hola, quiero probar el plan Básico 7 días" },
   { de: "fs", t: "¡Hola! ¿Cómo se llama tu barbería?" },
   { de: "tu", t: "Barbería Don Mario" },
   { de: "fs", t: "Listo. Tu link ya está activo: …/b/don-mario" },
@@ -135,7 +135,7 @@ export default function Landing() {
   const gratis = Math.max(0, ...precios.map(mesesGratis));
   const enlace = (texto: string) => (SOPORTE ? enlaceWhatsapp(SOPORTE, texto) : "");
   const quiero = enlace("Hola, quiero conocer Fade Studio para mi barbería");
-  const pruebaWsp = enlace(`Hola, quiero probar Fade Studio ${DIAS_PRUEBA} días gratis en mi barbería`);
+  const pruebaWsp = enlace(`Hola, quiero probar el plan Básico de Fade Studio ${DIAS_PRUEBA} días gratis en mi barbería`);
 
   /** Botón de prueba gratis: por WhatsApp si está configurado; si no, al formulario. */
   const BotonPrueba = ({ clase = "fs-btn fs-btn-oro" }: { clase?: string }) =>
@@ -167,7 +167,7 @@ export default function Landing() {
               </a>
             </div>
             <p className="fs-nota">
-              <b>{DIAS_PRUEBA} días gratis</b> · sin tarjeta · listo en minutos
+              <b>{DIAS_PRUEBA} días gratis en el plan Básico</b> · sin tarjeta · listo en minutos
             </p>
           </div>
           <Celular />
@@ -180,9 +180,9 @@ export default function Landing() {
                 <Ic n="gift" s={18} /> Gratis · sin tarjeta
               </span>
               <h2 id="prueba-t">
-                Pruébalo <b>{DIAS_PRUEBA} días gratis</b> en tu barbería
+                Prueba el plan Básico <b>{DIAS_PRUEBA} días gratis</b>
               </h2>
-              <p>Escríbenos por WhatsApp y en minutos tienes tu link listo para recibir reservas.</p>
+              <p>Escríbenos por WhatsApp y en minutos tienes tu link listo para recibir reservas. La prueba es del plan Básico; Pro y VIP se contratan directo.</p>
               <BotonPrueba />
             </div>
             <ol className="fs-prueba-pasos" aria-label="Cómo empezar la prueba">

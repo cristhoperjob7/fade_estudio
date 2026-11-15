@@ -300,3 +300,5 @@ em.fs-rev { font-style: normal; font-size: 12.5px; font-weight: 700; padding: 5p
   .fs-con { padding: 8px 32px 80px; }
   .fs-con-grid { grid-template-columns: 1.1fr .9fr; gap: 32px; }
 }
+
+.fs-nota-prueba { color: var(--s); font-size: 14.5px; margin: -8px 0 16px; }

@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { clp } from "../../lib/dinero";
-import { fechaCorta, fechaLarga, hm, hoyChile, minutosChile, sumarDias } from "../../lib/fecha";
+import { hm, hoyChile, minutosChile } from "../../lib/fecha";
 import { enlaceWhatsapp, formatearTelefono, mensajeClienteNoLlega } from "../../lib/whatsapp";
 import { ESTADO_LABEL } from "../../lib/types";
 import type { Cita, EstadoCita } from "../../lib/types";
 import { useToast } from "../../components/Toast";
+import SelectorDia from "../../components/SelectorDia";
 import Hoja from "../../components/Hoja";
 import Icon from "../../components/Icon";
 
@@ -94,28 +95,16 @@ export default function Agenda() {
 
   const lista = citas ?? [];
   const siguiente = fecha === hoy ? lista.find((c) => c.estado === "confirmada" && c.inicio_min + c.dur_min > ahora) : undefined;
-  const opciones = [
-    { f: sumarDias(hoy, -1), t: "Ayer" },
-    { f: hoy, t: "Hoy" },
-    { f: sumarDias(hoy, 1), t: "Mañana" },
-  ];
 
   return (
     <>
       <h1 className="titulo">Tu agenda</h1>
       <p className="suave capital">
-        {fechaLarga(fecha)} · {lista.length} {lista.length === 1 ? "cita" : "citas"}
+        {lista.length} {lista.length === 1 ? "cita" : "citas"}
         {siguiente ? ` · siguiente ${hm(siguiente.inicio_min)}` : ""}
       </p>
 
-      <div className="seg" role="tablist" aria-label="Día">
-        {opciones.map((o) => (
-          <button key={o.f} role="tab" aria-selected={fecha === o.f} className={fecha === o.f ? "on" : ""} onClick={() => setFecha(o.f)}>
-            {o.t}
-            <small>{fechaCorta(o.f)}</small>
-          </button>
-        ))}
-      </div>
+      <SelectorDia fecha={fecha} onCambiar={setFecha} />
 
       {error && (
         <p className="aviso error" role="alert">

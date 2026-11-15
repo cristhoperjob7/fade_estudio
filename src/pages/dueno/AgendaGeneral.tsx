@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { clp } from "../../lib/dinero";
-import { fechaCorta, fechaLarga, hm, hoyChile, minutosChile, sumarDias } from "../../lib/fecha";
+import { hm, hoyChile, minutosChile } from "../../lib/fecha";
 import { enlaceWhatsapp, formatearTelefono, mensajeClienteNoLlega } from "../../lib/whatsapp";
 import { ESTADO_LABEL } from "../../lib/types";
 import type { Cita, EstadoCita } from "../../lib/types";
 import { useToast } from "../../components/Toast";
 import Hoja from "../../components/Hoja";
 import Icon from "../../components/Icon";
+import SelectorDia from "../../components/SelectorDia";
 
 const PX_HORA = 64;
 const CAMPOS = "id,codigo,barbero_id,servicio_nombre,precio,fecha,inicio_min,dur_min,cliente_nombre,cliente_telefono,estado";
@@ -25,6 +26,7 @@ export default function AgendaGeneral() {
   const [cols, setCols] = useState<Col[]>([]);
   const [horario, setHorario] = useState({ nombre: "", apertura: 600, cierre: 1200 });
   const [sel, setSel] = useState<Cita | null>(null);
+  const [filtro, setFiltro] = useState("");
   const [ahora, setAhora] = useState(minutosChile());
   const [error, setError] = useState("");
 
@@ -82,12 +84,15 @@ export default function AgendaGeneral() {
   };
 
   const lista = citas ?? [];
+  const listaVista = filtro ? lista.filter((c) => c.barbero_id === filtro) : lista;
   // Si una cita es de alguien que ya no atiende, igual aparece (columna extra).
-  const columnas = useMemo(() => {
+  const todas = useMemo(() => {
     const extra = lista.filter((c) => !cols.some((k) => k.id === c.barbero_id)).map((c) => c.barbero_id);
     return [...cols, ...Array.from(new Set(extra)).map((id) => ({ id, nombre: "Otro" }))];
   }, [cols, lista]);
-  const nombreDe = (id: string) => columnas.find((k) => k.id === id)?.nombre ?? "";
+  // Con un barbero elegido se ve solo su columna; con «Todos», una columna cada uno (con desplazamiento si son muchos).
+  const columnas = filtro ? todas.filter((k) => k.id === filtro) : todas;
+  const nombreDe = (id: string) => todas.find((k) => k.id === id)?.nombre ?? "";
 
   const desde = Math.floor(horario.apertura / 60) * 60;
   const hasta = Math.ceil(horario.cierre / 60) * 60;
@@ -96,29 +101,31 @@ export default function AgendaGeneral() {
   const lineaAhora = fecha === hoy && ahora >= desde && ahora <= hasta ? y(ahora) : null;
   const n = Math.max(columnas.length, 1);
   const ancho = 100 / n;
-  const pendientes = lista.filter((c) => c.estado === "por_revisar").length;
-  const opciones = [
-    { f: sumarDias(hoy, -1), t: "Ayer" },
-    { f: hoy, t: "Hoy" },
-    { f: sumarDias(hoy, 1), t: "Mañana" },
-  ];
+  const pendientes = listaVista.filter((c) => c.estado === "por_revisar").length;
+  const anchoMin = columnas.length > 3 ? columnas.length * 132 + 48 : undefined;
 
   return (
     <>
       <h1 className="titulo">Agenda</h1>
       <p className="suave capital">
-        {fechaLarga(fecha)} · {lista.length} {lista.length === 1 ? "cita" : "citas"}
+        {listaVista.length} {listaVista.length === 1 ? "cita" : "citas"}
         {pendientes > 0 ? ` · ${pendientes} por revisar` : ""}
       </p>
 
-      <div className="seg" role="tablist" aria-label="Día">
-        {opciones.map((o) => (
-          <button key={o.f} role="tab" aria-selected={fecha === o.f} className={fecha === o.f ? "on" : ""} onClick={() => setFecha(o.f)}>
-            {o.t}
-            <small>{fechaCorta(o.f)}</small>
+      <SelectorDia fecha={fecha} onCambiar={setFecha} />
+
+      {todas.length > 1 && (
+        <div className="filtro-barberos" role="tablist" aria-label="Barbero">
+          <button role="tab" aria-selected={filtro === ""} className={filtro === "" ? "on" : ""} onClick={() => setFiltro("")}>
+            Todos
           </button>
-        ))}
-      </div>
+          {todas.map((k) => (
+            <button key={k.id} role="tab" aria-selected={filtro === k.id} className={filtro === k.id ? "on" : ""} onClick={() => setFiltro(k.id)}>
+              {k.nombre.split(" ")[0]}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && (
         <p className="aviso error" role="alert">
@@ -126,6 +133,8 @@ export default function AgendaGeneral() {
         </p>
       )}
 
+      <div className="agenda-scroll">
+      <div style={{ minWidth: anchoMin }}>
       <div className="cols-cab" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
         {columnas.map((k) => (
           <span key={k.id}>{k.nombre.split(" ")[0]}</span>
@@ -161,8 +170,10 @@ export default function AgendaGeneral() {
           </div>
         ))}
       </div>
+      </div>
+      </div>
 
-      {citas && lista.length === 0 && <div className="vacio">No hay citas para este día.</div>}
+      {citas && listaVista.length === 0 && <div className="vacio">No hay citas para este día.</div>}
 
       {sel && (
         <Hoja titulo={sel.cliente_nombre} onCerrar={() => setSel(null)}>
