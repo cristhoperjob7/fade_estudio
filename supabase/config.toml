@@ -1,0 +1,14 @@
+# Configuración mínima para subir las funciones con la CLI de Supabase.
+project_id = "fade-studio"
+
+# La llama la base de datos con un secreto propio (no con sesión de usuario).
+[functions.notificar-push]
+verify_jwt = false
+
+# La llama el superadmin desde el sistema, con su sesión.
+[functions.superadmin]
+verify_jwt = true
+
+# La llama el dueño desde el sistema, con su sesión.
+[functions.equipo]
+verify_jwt = true
