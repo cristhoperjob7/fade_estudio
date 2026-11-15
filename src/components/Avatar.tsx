@@ -1,11 +1,21 @@
-/** Avatar con aro dorado y corta corona: lo llevan el Dueño y el Barbero. */
-export default function Avatar({ iniciales }: { iniciales: string }) {
+/** Avatar con aro y corona. Dorado para Dueño y Barbero, rojo para el Superadmin. Muestra la foto si hay. */
+export default function Avatar({
+  iniciales,
+  foto,
+  rojo = false,
+  grande = false,
+}: {
+  iniciales: string;
+  foto?: string | null;
+  rojo?: boolean;
+  grande?: boolean;
+}) {
   return (
-    <div className="avatar" aria-hidden="true">
+    <div className={`avatar${rojo ? " rojo" : ""}${grande ? " grande" : ""}`} aria-hidden="true">
       <svg className="corona" viewBox="0 0 18 12" aria-hidden="true">
         <path d="M1 11L0 2l5 4 4-6 4 6 5-4-1 9z" />
       </svg>
-      <span>{iniciales.slice(0, 2).toUpperCase()}</span>
+      {foto ? <img src={foto} alt="" draggable={false} /> : <span>{iniciales.slice(0, 2).toUpperCase()}</span>}
     </div>
   );
 }

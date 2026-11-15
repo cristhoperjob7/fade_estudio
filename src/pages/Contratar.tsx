@@ -35,7 +35,8 @@ export default function Contratar() {
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
 
-  const def = PLANES_DEF.find((d) => d.clave === plan)!;
+  const k = Math.max(0, PLANES_DEF.findIndex((d) => d.clave === plan));
+  const def = PLANES_DEF[k]!;
   const p = precios.find((x) => x.clave === plan) ?? precios[0]!;
   const paso = enviado ? 3 : 2;
 
@@ -172,41 +173,57 @@ export default function Contratar() {
                 ))}
               </div>
 
-              <div className={`fs-resumen fs-resumen-${plan}`}>
-                <div className="fs-resumen-top">
+              <article className={`fs-carta fs-carta${k} fs-carta-resumen`}>
+                <div className="fs-carta-in">
                   <span className="fs-rareza">{def.rareza}</span>
-                  <h2>{p.nombre}</h2>
+                  <h3>
+                    {p.nombre}
+                    {k > 0 && <Ic n="crown" s={32} sw={1.6} />}
+                  </h3>
+                  <p className="fs-lema">{def.lema}</p>
+                  <div className="fs-precio">
+                    <b>
+                      <Monto valor={ciclo === "prueba" ? 0 : ciclo === "anual" ? p.precio_anual : p.precio_mensual} />
+                    </b>
+                    <small>{ciclo === "prueba" ? `por ${DIAS_PRUEBA} días` : ciclo === "anual" ? "/año" : "/mes"}</small>
+                  </div>
+                  <p className="fs-resumen-nota">
+                    {ciclo === "prueba" && (
+                      <>
+                        Después: <Monto valor={p.precio_mensual} sufijo="/mes" />. Puedes cancelar antes y no pagas nada.
+                      </>
+                    )}
+                    {ciclo === "anual" && ahorroAnual(p) > 0 && (
+                      <>
+                        Ahorras <Monto valor={ahorroAnual(p)} /> al año.
+                      </>
+                    )}
+                    {ciclo === "mensual" && "Sin permanencia. Cancelas cuando quieras."}
+                  </p>
+                  <div className="fs-stats">
+                    {def.stats.map(([n, v]) => (
+                      <div key={n} className="fs-stat">
+                        <span>{n}</span>
+                        <div className="fs-bar">
+                          {[0, 1, 2, 3, 4].map((i) => (
+                            <i key={i} className={i < v ? "on" : ""} />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <ul className="fs-hab" style={{ marginBottom: 0 }}>
+                    {[...(plan === "basico" ? [] : [{ i: "check" as const, t: def.incluye }]), ...def.hab].map((h) => (
+                      <li key={h.t}>
+                        <span>
+                          <Ic n={h.i} s={18} sw={2} />
+                        </span>
+                        {h.t}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="fs-precio">
-                  <b>
-                    <Monto valor={ciclo === "prueba" ? 0 : ciclo === "anual" ? p.precio_anual : p.precio_mensual} />
-                  </b>
-                  <small>{ciclo === "prueba" ? `por ${DIAS_PRUEBA} días` : ciclo === "anual" ? "/año" : "/mes"}</small>
-                </div>
-                <p className="fs-resumen-nota">
-                  {ciclo === "prueba" && (
-                    <>
-                      Después: <Monto valor={p.precio_mensual} sufijo="/mes" />. Puedes cancelar antes y no pagas nada.
-                    </>
-                  )}
-                  {ciclo === "anual" && ahorroAnual(p) > 0 && (
-                    <>
-                      Ahorras <Monto valor={ahorroAnual(p)} /> al año.
-                    </>
-                  )}
-                  {ciclo === "mensual" && "Sin permanencia. Cancelas cuando quieras."}
-                </p>
-                <ul className="fs-hab">
-                  {[...(plan === "basico" ? [] : [{ i: "check" as const, t: def.incluye }]), ...def.hab].map((h) => (
-                    <li key={h.t}>
-                      <span>
-                        <Ic n={h.i} s={18} sw={2} />
-                      </span>
-                      {h.t}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              </article>
             </section>
 
             <form className="fs-form" onSubmit={enviar} noValidate>

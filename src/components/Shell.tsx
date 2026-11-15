@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { ROL_LABEL } from "../lib/types";
 import Avatar, { iniciales } from "./Avatar";
+import { useMiPerfil } from "../lib/perfil";
 import Icon from "./Icon";
 import type { NombreIcono } from "./Icon";
 
@@ -15,6 +16,7 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
   const navegar = useNavigate();
   const [barberia, setBarberia] = useState("");
   const [pendientes, setPendientes] = useState(0);
+  const { datos: mio, foto } = useMiPerfil(Boolean(perfil || esAdmin));
 
   useEffect(() => {
     if (perfil?.rol !== "dueno") return;
@@ -45,17 +47,25 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
   }, [perfil?.rol]);
 
   if (!perfil && !esAdmin) return null;
-  const titulo = perfil ? (perfil.rol === "dueno" ? barberia || perfil.nombre : perfil.nombre) : "Fade Studio";
+  const nombreMostrar = mio ? [mio.nombre, mio.apellidos].filter(Boolean).join(" ") : "";
+  const titulo = perfil
+    ? perfil.rol === "dueno"
+      ? barberia || perfil.nombre
+      : nombreMostrar || perfil.nombre
+    : nombreMostrar || "Fade Studio";
   const rolTexto = perfil ? ROL_LABEL[perfil.rol] : "Superadmin";
-  const ini = perfil ? perfil.iniciales || iniciales(perfil.nombre) : "FS";
+  const ini = perfil ? perfil.iniciales || iniciales(perfil.nombre) : mio?.nombre ? iniciales(nombreMostrar) : "FS";
+  const rojo = !perfil;
 
   return (
     <div className="app">
       <header className="cabecera">
-        <Avatar iniciales={ini} />
+        <Link to={rojo ? "/admin/perfil" : "/panel/perfil"} className="avatar-link" aria-label="Mi perfil">
+          <Avatar iniciales={ini} foto={foto} rojo={rojo} />
+        </Link>
         <div className="quien">
           <b>{titulo}</b>
-          <span className="rol-oro">{rolTexto}</span>
+          <span className={rojo ? "rol-rojo" : "rol-oro"}>{rolTexto}</span>
         </div>
         <button
           className="icono-btn"

@@ -10,6 +10,8 @@ export type Perfil = {
   barberia_id: string;
   rol: Rol;
   nombre: string;
+  apellidos?: string;
+  avatar_path?: string | null;
   iniciales: string;
   correo: string;
   telefono: string;

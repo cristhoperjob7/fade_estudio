@@ -14,6 +14,7 @@ import Agenda from "./pages/barbero/Agenda";
 import AgendaGeneral from "./pages/dueno/AgendaGeneral";
 import Equipo from "./pages/dueno/Equipo";
 import Cuenta from "./pages/Cuenta";
+import Perfil from "./pages/Perfil";
 import Landing from "./pages/Landing";
 import Vencida from "./pages/Vencida";
 import Resumen from "./pages/admin/Resumen";
@@ -99,6 +100,7 @@ export default function App() {
           <Route path="barberias" element={<Barberias />} />
           <Route path="solicitudes" element={<Solicitudes />} />
           <Route path="planes" element={<Planes />} />
+          <Route path="perfil" element={<Perfil />} />
         </Route>
       </Route>
 
@@ -112,6 +114,7 @@ export default function App() {
             <Route path="reservas" element={<Reservas />} />
             <Route path="equipo" element={<Equipo />} />
             <Route path="ajustes" element={<Ajustes />} />
+            <Route path="perfil" element={<Perfil />} />
           </Route>
         </Route>
 
@@ -119,6 +122,7 @@ export default function App() {
           <Route element={<Shell pestanas={PESTANAS_BARBERO} />}>
             <Route path="agenda" element={<Agenda />} />
             <Route path="cuenta" element={<Cuenta />} />
+            <Route path="perfil" element={<Perfil />} />
           </Route>
         </Route>
       </Route>

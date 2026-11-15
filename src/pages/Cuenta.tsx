@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { formatearTelefono } from "../lib/whatsapp";
 import CambiarClave from "../components/CambiarClave";
@@ -29,6 +30,9 @@ export default function Cuenta() {
           <b className="num">{perfil.comision_pct}%</b>
         </div>
       </div>
+      <Link to="/panel/perfil" className="btn btn-borde" style={{ marginTop: 14 }}>
+        Editar foto y datos
+      </Link>
       <CambiarClave />
     </>
   );

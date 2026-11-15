@@ -8,10 +8,11 @@ import type { Perfil } from "../../lib/types";
 import { ROL_LABEL } from "../../lib/types";
 import { useToast } from "../../components/Toast";
 import Avatar from "../../components/Avatar";
+import { urlFoto } from "../../lib/perfil";
 import Hoja from "../../components/Hoja";
 import Icon from "../../components/Icon";
 
-const CAMPOS = "id,rol,nombre,iniciales,correo,telefono,comision_pct,activo,atiende";
+const CAMPOS = "id,rol,nombre,apellidos,avatar_path,iniciales,correo,telefono,comision_pct,activo,atiende";
 
 export default function Equipo() {
   const { perfil: yo } = useAuth();
@@ -45,7 +46,7 @@ export default function Equipo() {
         {(gente ?? []).map((p) => (
           <li key={p.id}>
             <button className="fila fila-btn" onClick={() => setEditar(p)}>
-              <Avatar iniciales={p.iniciales} />
+              <Avatar iniciales={p.iniciales} foto={urlFoto(p.avatar_path)} />
               <span className="fila-cuerpo">
                 <b>
                   {p.nombre}

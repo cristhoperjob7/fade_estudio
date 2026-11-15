@@ -265,18 +265,13 @@ em.fs-rev { font-style: normal; font-size: 12.5px; font-weight: 700; padding: 5p
 .fs-ciclos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 14px 0 18px; padding: 5px; background: #12121c; border: 1px solid var(--l); border-radius: 14px; }
 .fs-ciclos button { all: unset; box-sizing: border-box; cursor: pointer; text-align: center; min-height: 46px; display: grid; place-items: center; padding: 0 6px; border-radius: 10px; font-weight: 700; font-size: 15px; color: var(--s); transition: background .25s, color .25s; }
 .fs-ciclos button.on { background: #2b2b46; color: var(--t); }
-.fs-resumen { padding: 24px 22px; border-radius: 22px; border: 1.5px solid #3b3b58; background: linear-gradient(180deg, #171722, #0d0d14); }
-.fs-resumen-pro { border-color: var(--oro); box-shadow: 0 0 50px -16px #f0c24f66; }
-.fs-resumen-vip { border-color: var(--ice); box-shadow: 0 0 50px -16px #8fe3ff66; }
-.fs-resumen-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.fs-resumen h2 { font-size: 40px; line-height: 1; }
-.fs-resumen-pro h2 { color: var(--oro); }
-.fs-resumen-vip h2 { color: var(--ice); }
-.fs-resumen-pro .fs-rareza { background: #3a2c0a; color: var(--oro); }
-.fs-resumen-vip .fs-rareza { background: #1f2c3f; color: var(--ice); }
-.fs-resumen-basico .fs-rareza { background: #2a2c3d; color: #cfd3e6; }
-.fs-rareza { margin: 0; }
-.fs-resumen-nota { color: var(--s); font-size: 15px; margin: 6px 0 16px; min-height: 22px; font-variant-numeric: tabular-nums; }
+.fs-carta-resumen { margin: 0; transform: none !important; animation: fs-entra .45s ease both; }
+.fs-carta-resumen .fs-rareza { margin: 0 0 10px; }
+.fs-carta-resumen h3 { font-size: 52px; }
+.fs-carta-resumen .fs-hab { margin-top: 14px; }
+@keyframes fs-entra { from { opacity: .0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .fs-carta-resumen { animation: none; } }
+.fs-carta-resumen .fs-resumen-nota { color: var(--s); font-size: 15px; margin: 6px 0 16px; min-height: 22px; font-variant-numeric: tabular-nums; }
 .fs-form { display: grid; gap: 16px; padding: 26px 22px; border-radius: 22px; border: 1px solid var(--l); background: #0e0e15; }
 .fs-form h2 { font-size: 32px; line-height: 1; }
 .fs-form-sub { color: var(--s); margin-top: -8px; }
