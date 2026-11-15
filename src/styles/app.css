@@ -302,37 +302,38 @@ a { color: inherit; }
 .fade-mark { flex: none; }
 
 /* ---------- Acceso y portada ---------- */
-.acceso { min-height: 100dvh; display: grid; grid-template-columns: 1fr; background: #0a0b0f; }
-.cartel { position: relative; height: 210px; overflow: hidden; background: #0a0b0f; border-bottom: 1px solid var(--line); }
-.cartel-marca { position: absolute; top: 22px; left: 22px; z-index: 2; }
-.cartel-barras { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; display: flex; align-items: flex-end; gap: 6px; padding: 0 22px; opacity: .9; }
-.cartel-barras i {
-  flex: 1; min-width: 0; border-radius: 999px 999px 0 0;
-  background: color-mix(in srgb, #2563eb calc((1 - var(--t)) * 100%), #e0b24a);
-  transform-origin: bottom; animation: sube .7s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i) * 45ms);
-  max-height: 62%;
-}
-.cartel-lema { display: none; }
-@keyframes sube { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@media (prefers-reduced-motion: reduce) { .cartel-barras i { animation: none; } }
-.acceso-form { display: grid; place-items: start center; padding: 28px 22px 40px; background: var(--bg); }
-.acceso-caja { width: 100%; max-width: 400px; display: grid; gap: 12px; }
-.acceso-caja form { display: grid; gap: 14px; margin-top: 6px; }
-.acceso-caja .btn { width: 100%; }
+.acceso { min-height: 100dvh; display: grid; grid-template-columns: 1fr; background: #090b10; color: #f4f6fb; }
+.panel-marca { display: none; }
+.acceso-form { display: grid; place-items: start center; padding: 22px 20px 40px; background: #090b10; }
+.acceso-caja { width: 100%; max-width: 440px; display: grid; gap: 0; }
+.acceso-movil { display: grid; gap: 16px; margin-bottom: 22px; }
+.acceso-movil .tira { height: 26px; width: 100%; }
+.tira { display: block; width: 100%; height: 90px; }
+.acceso-tipos { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 5px; background: #12151d; border: 1px solid #232838; border-radius: 14px; }
+.acceso-tipos button { all: unset; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; border-radius: 10px; font-weight: 700; font-size: 15.5px; color: #aab3c8; text-align: center; }
+.acceso-tipos button:focus-visible { outline: 2px solid #8fb2ff; outline-offset: 2px; }
+.acceso-tipos button.on { background: #2563eb; color: #fff; }
+.acceso-caja h1 { font-size: 28px; line-height: 1.12; letter-spacing: -.02em; font-weight: 700; margin: 26px 0 6px; }
+.acceso-sub { color: #aab3c8; font-size: 16.5px; line-height: 1.4; margin-bottom: 20px; }
 .acceso-kicker { font-size: 12.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--oro); }
-.acceso-caja h1 { font-size: 30px; line-height: 1.1; letter-spacing: -.02em; font-weight: 700; }
-.acceso-caja .enlace-volver { justify-self: start; margin-top: 8px; }
-.acceso-solo-movil { display: none; }
-.portada-lista { list-style: none; display: grid; gap: 10px; margin: 6px 0 10px; color: var(--mut); font-size: 15.5px; }
-.portada-lista li { padding-left: 18px; position: relative; }
-.portada-lista li::before { content: ""; position: absolute; left: 0; top: .55em; width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #e0b24a); }
+.acceso-caja form { display: grid; gap: 16px; }
+.acceso-caja .campo { font-size: 15.5px; gap: 8px; }
+.acceso-caja .campo > span { color: #e6eaf5; font-weight: 700; }
+.acceso-caja .campo input { min-height: 56px; font-size: 17px; border-radius: 14px; border: 1.5px solid #2e3550; background: #0d1018; color: #fff; }
+.acceso-caja .btn { width: 100%; min-height: 58px; font-size: 17.5px; border-radius: 14px; font-weight: 700; margin-top: 4px; }
+.acceso-caja > .btn + .btn { margin-top: 10px; }
+.acceso-caja > .btn:first-of-type { margin-top: 10px; }
+.acceso-pie { margin-top: 20px; color: #8d97ae; font-size: 15px; text-align: center; }
+.acceso-caja .enlace-volver { justify-self: center; margin-top: 10px; color: #aab3c8; }
 @media (min-width: 860px) {
-  .acceso { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
-  .cartel { height: auto; border-bottom: 0; border-right: 1px solid var(--line); }
-  .cartel-marca { top: 36px; left: 44px; }
-  .cartel-barras { padding: 0 44px; gap: 10px; }
-  .cartel-barras i { max-height: 78%; }
-  .cartel-lema { display: block; position: absolute; left: 44px; top: 50%; transform: translateY(-62%); z-index: 2; font-family: "Big Shoulders", sans-serif; font-weight: 700; font-size: clamp(64px, 7.5vw, 124px); line-height: .92; text-transform: uppercase; letter-spacing: .01em; text-shadow: 0 2px 30px #0a0b0f; }
-  .cartel-lema i { font-family: "Crimson Pro", serif; font-weight: 400; text-transform: none; color: var(--oro); font-size: .78em; }
-  .acceso-form { padding: 40px; place-items: center; }
+  .acceso { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+  .panel-marca { display: flex; flex-direction: column; justify-content: space-between; padding: 44px 52px; background: linear-gradient(160deg, #101a33 0%, #0a1020 60%); border-right: 1px solid #1d2742; }
+  .panel-marca h2 { font-family: "Big Shoulders", "Inter Variable", sans-serif; font-weight: 700; font-size: clamp(52px, 4.6vw, 70px); line-height: .98; text-transform: uppercase; letter-spacing: .01em; margin: 0 0 14px; }
+  .panel-marca h2 i { display: block; font-family: "Crimson Pro", serif; font-style: italic; font-weight: 400; text-transform: none; color: var(--oro); font-size: .72em; margin-top: 6px; }
+  .puntos { list-style: none; display: grid; gap: 16px; margin-top: 28px; }
+  .puntos li { display: flex; gap: 14px; align-items: flex-start; font-size: 18px; line-height: 1.35; color: #dbe2f3; }
+  .puntos b { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 10px; background: #1a2a55; color: #8fb2ff; font-size: 16px; }
+  .acceso-form { place-items: center; padding: 40px 28px; }
+  .acceso-movil { display: none; }
+  .acceso-caja h1 { font-size: 32px; margin-top: 30px; }
 }

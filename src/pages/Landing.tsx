@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import Cartel from "../components/Cartel";
+import Cartel, { Tira } from "../components/Cartel";
 import FadeLogo from "../components/FadeLogo";
 import { enlaceWhatsapp } from "../lib/whatsapp";
 
@@ -9,19 +9,16 @@ const SOPORTE = ((import.meta.env.VITE_SOPORTE_WHATSAPP as string | undefined) ?
 export default function Landing() {
   return (
     <div className="acceso">
-      <Cartel grande />
+      <Cartel />
       <main className="acceso-form">
         <div className="acceso-caja">
-          <span className="acceso-solo-movil">
-            <FadeLogo size={30} />
-          </span>
+          <div className="acceso-movil">
+            <FadeLogo size={34} />
+            <Tira />
+          </div>
           <p className="acceso-kicker">Sistema para barberías</p>
           <h1>Reservas, pagos y comisiones, en un solo lugar.</h1>
-          <ul className="portada-lista">
-            <li>Tus clientes reservan solos, a cualquier hora.</li>
-            <li>Pagan por adelantado y tú apruebas el comprobante.</li>
-            <li>Agenda por barbero y avisos en tu celular.</li>
-          </ul>
+          <p className="acceso-sub">Tus clientes reservan solos, pagan por adelantado y tú apruebas el comprobante desde el celular.</p>
           <Link to="/login" className="btn btn-primario">
             Ingresar
           </Link>

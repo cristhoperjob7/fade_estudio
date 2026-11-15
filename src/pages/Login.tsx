@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import type { TipoAcceso } from "../lib/auth";
 import { configurado } from "../lib/supabase";
 import FadeLogo from "../components/FadeLogo";
-import Cartel from "../components/Cartel";
+import Cartel, { Tira } from "../components/Cartel";
+import Icon from "../components/Icon";
 
 export default function Login() {
   const { perfil, esAdmin, sesion, cargando, iniciarSesion, cerrarSesion } = useAuth();
@@ -13,6 +15,7 @@ export default function Login() {
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [tipo, setTipo] = useState<TipoAcceso>("barbero");
 
   useEffect(() => {
     if (esAdmin && !perfil) navegar("/admin", { replace: true });
@@ -23,24 +26,62 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setEnviando(true);
-    const mensaje = await iniciarSesion(correo, clave);
+    const mensaje = await iniciarSesion(correo, clave, tipo);
     setEnviando(false);
     if (mensaje) setError(mensaje);
   };
 
   const sinAcceso = !cargando && sesion && !perfil && !esAdmin;
 
+  const esBarbero = tipo === "barbero";
+
   return (
     <div className="acceso">
       <Cartel />
       <main className="acceso-form">
         <div className="acceso-caja">
-          <span className="acceso-solo-movil">
-            <FadeLogo size={30} />
-          </span>
-          <p className="acceso-kicker">Acceso</p>
-          <h1>Entra a tu panel</h1>
-          <p className="suave">Con el correo y la clave que te dieron.</p>
+          <div className="acceso-movil">
+            <FadeLogo size={34} />
+            <Tira />
+          </div>
+
+          {!sinAcceso && (
+            <div className="acceso-tipos" role="tablist" aria-label="Tipo de acceso">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={esBarbero}
+                className={esBarbero ? "on" : ""}
+                onClick={() => {
+                  setTipo("barbero");
+                  setError("");
+                }}
+              >
+                <Icon nombre="scissors" size={20} />
+                Barbero
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!esBarbero}
+                className={!esBarbero ? "on" : ""}
+                onClick={() => {
+                  setTipo("admin");
+                  setError("");
+                }}
+              >
+                <Icon nombre="shield" size={20} />
+                Administración
+              </button>
+            </div>
+          )}
+
+          <h1>{esBarbero ? "Acceso barberos" : "Acceso administración"}</h1>
+          <p className="acceso-sub">
+            {esBarbero
+              ? "Entra para ver tu agenda del día y tus citas."
+              : "Para dueños de barbería y administradores de Fade Studio."}
+          </p>
 
           {!configurado && (
             <p className="aviso error" role="alert">
@@ -86,11 +127,14 @@ export default function Login() {
                 </p>
               )}
               <button className="btn btn-primario" type="submit" disabled={enviando || !correo || !clave || !configurado}>
-                {enviando ? "Entrando…" : "Entrar"}
+                {enviando ? "Entrando…" : esBarbero ? "Entrar a mi agenda" : "Entrar al panel"}
               </button>
             </form>
           )}
 
+          <p className="acceso-pie">
+            {esBarbero ? "¿Problemas para entrar? Pídele tu clave al administrador." : "¿Olvidaste tu clave? Escríbenos y la restablecemos."}
+          </p>
           <Link to="/" className="enlace-volver">
             Volver al inicio
           </Link>
