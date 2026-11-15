@@ -11,7 +11,16 @@ export default function Hoja({ titulo, onCerrar, children }: { titulo: string; o
   }, [onCerrar]);
 
   return (
-    <div className="hoja-fondo" onClick={(e) => e.target === e.currentTarget && onCerrar()}>
+    <div
+      className="hoja-fondo"
+      onMouseDown={(e) => {
+        // Solo cierra si el clic EMPIEZA y TERMINA en el fondo (así no se cierra al seleccionar texto)
+        (e.currentTarget as HTMLElement).dataset.ini = e.target === e.currentTarget ? "1" : "";
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && e.currentTarget.dataset.ini === "1") onCerrar();
+      }}
+    >
       <div className="hoja" role="dialog" aria-modal="true" aria-label={titulo}>
         <div className="hoja-cab">
           <h2>{titulo}</h2>
