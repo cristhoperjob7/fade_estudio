@@ -78,6 +78,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={SLUG_DEFECTO ? <Home /> : <Landing />} />
+      <Route path="/fade-studio" element={<Landing />} />
       <Route path="/reservar" element={<Reservar />} />
       <Route path="/reserva/:codigo" element={<Reserva />} />
       <Route path="/b/:slug" element={<Home />} />
