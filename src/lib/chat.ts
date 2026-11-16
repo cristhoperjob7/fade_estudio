@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 
 export type Sala = { clave: string; nombre: string };
@@ -16,7 +16,23 @@ export type Mensaje = {
   sticker: string | null;
   borrado: boolean;
   creado_en: string;
+  destinatario_id?: string | null;
 };
+
+/** Persona conectada (o con la que tengo un chat privado). */
+export type Conectado = {
+  id: string;
+  nombre: string;
+  rol: "superadmin" | "dueno" | "barbero";
+  plan: PlanChat;
+  barberia: string;
+  avatar: string | null;
+};
+export type Privado = Conectado & { sala: string; ultimo: string; ultimo_en: string; no_leidos: number };
+
+/** Nombre de la sala privada entre dos personas (siempre el mismo, sin importar quién escribe primero). */
+export const salaPrivada = (a: string, b: string) => `dm:${a < b ? a : b}:${a < b ? b : a}`;
+const EVENTO_LEIDO = "fs-chat-leido";
 
 /** Packs de emoticones animados. Cada plan desbloquea los de su nivel y los anteriores. */
 export const PACKS: { clave: PlanChat; nombre: string; items: string[] }[] = [
@@ -39,10 +55,10 @@ export function useSalas(): Sala[] | null {
 const LIMITE = 80;
 
 /** Mensajes de una sala en vivo, con quiénes están conectados y el mensaje fijado. */
-export function useChat(sala: string, miId: string | undefined) {
+export function useChat(sala: string, yo: Conectado | null, destinatario?: string) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [enLinea, setEnLinea] = useState(0);
+  const [conectados, setConectados] = useState<Conectado[]>([]);
   const [fijado, setFijado] = useState("");
 
   const cargarFijado = useCallback(async () => {
@@ -50,11 +66,16 @@ export function useChat(sala: string, miId: string | undefined) {
     setFijado((data as { texto: string } | null)?.texto ?? "");
   }, [sala]);
 
+  const yoRef = useRef(yo);
+  yoRef.current = yo;
+  const canalRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const miId = yo?.id;
+
   useEffect(() => {
     let vivo = true;
     setCargando(true);
     setMensajes([]);
-    setEnLinea(0);
+    setConectados([]);
     void supabase
       .from("chat_mensajes")
       .select("*")
@@ -66,7 +87,8 @@ export function useChat(sala: string, miId: string | undefined) {
         setMensajes(((data as Mensaje[] | null) ?? []).reverse());
         setCargando(false);
       });
-    void cargarFijado();
+    if (!sala.startsWith("dm:")) void cargarFijado();
+    else setFijado("");
 
     const canal = supabase.channel(`chat:${sala}`, { config: { presence: { key: miId ?? "anon" } } });
     canal
@@ -78,23 +100,39 @@ export function useChat(sala: string, miId: string | undefined) {
         const n = p.new as Mensaje;
         setMensajes((m) => m.map((x) => (x.id === n.id ? n : x)));
       })
-      .on("presence", { event: "sync" }, () => setEnLinea(Object.keys(canal.presenceState()).length))
+      .on("presence", { event: "sync" }, () => {
+        const estado = canal.presenceState() as Record<string, Conectado[]>;
+        setConectados(
+          Object.values(estado)
+            .map((v) => v[0])
+            .filter((c): c is Conectado => !!c && typeof c.id === "string"),
+        );
+      })
       .subscribe((estado) => {
-        if (estado === "SUBSCRIBED") void canal.track({ desde: Date.now() });
+        if (estado === "SUBSCRIBED" && yoRef.current) void canal.track(yoRef.current);
       });
+    canalRef.current = canal;
     return () => {
       vivo = false;
+      canalRef.current = null;
       void supabase.removeChannel(canal);
     };
   }, [sala, miId, cargarFijado]);
 
+  // Si mis datos llegan después de entrar a la sala, se avisan a los demás.
+  useEffect(() => {
+    if (yo && canalRef.current) void canalRef.current.track(yo);
+  }, [yo]);
+
   /** Devuelve el motivo si no se pudo enviar. */
   const enviar = useCallback(
     async (texto: string, sticker: string | null): Promise<string> => {
-      const { error } = await supabase.rpc("chat_enviar", { p_sala: sala, p_texto: texto, p_sticker: sticker });
+      const { error } = destinatario
+        ? await supabase.rpc("chat_enviar_privado", { p_destinatario: destinatario, p_texto: texto, p_sticker: sticker })
+        : await supabase.rpc("chat_enviar", { p_sala: sala, p_texto: texto, p_sticker: sticker });
       return error ? error.message : "";
     },
-    [sala],
+    [sala, destinatario],
   );
   const borrar = useCallback(async (id: number) => {
     await supabase.rpc("chat_borrar", { p_id: id });
@@ -112,5 +150,66 @@ export function useChat(sala: string, miId: string | undefined) {
     [sala, cargarFijado],
   );
 
-  return { mensajes, cargando, enLinea, fijado, enviar, borrar, silenciar, fijar };
+  return { mensajes, cargando, conectados, enLinea: conectados.length, fijado, enviar, borrar, silenciar, fijar };
+}
+
+/** Mis conversaciones privadas. Se actualizan solas cuando llega un mensaje. */
+export function usePrivados(miId: string | undefined) {
+  const [lista, setLista] = useState<Privado[]>([]);
+  const cargar = useCallback(async () => {
+    const { data } = await supabase.rpc("chat_mis_privados");
+    setLista((data as Privado[] | null) ?? []);
+  }, []);
+  useEffect(() => {
+    if (!miId) return;
+    void cargar();
+    const canal = supabase.channel(`chat-privados:${miId}`);
+    canal.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_mensajes", filter: `destinatario_id=eq.${miId}` }, () => void cargar()).subscribe();
+    const alLeer = () => void cargar();
+    window.addEventListener(EVENTO_LEIDO, alLeer);
+    return () => {
+      window.removeEventListener(EVENTO_LEIDO, alLeer);
+      void supabase.removeChannel(canal);
+    };
+  }, [miId, cargar]);
+  return { lista, recargar: cargar, sinLeer: lista.reduce((t, p) => t + p.no_leidos, 0) };
+}
+
+/** Marca como leída una conversación y avisa al resto de la app. */
+export async function marcarLeido(sala: string) {
+  await supabase.rpc("chat_marcar_leido", { p_sala: sala });
+  window.dispatchEvent(new Event(EVENTO_LEIDO));
+}
+
+/** Cantidad de mensajes privados sin leer (para la insignia del menú). */
+export function useNoLeidos(miId: string | undefined): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!miId) return;
+    const contar = () => void supabase.rpc("chat_no_leidos").then(({ data }) => setN(Number(data ?? 0)));
+    contar();
+    const canal = supabase.channel(`chat-no-leidos:${miId}`);
+    canal.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_mensajes", filter: `destinatario_id=eq.${miId}` }, contar).subscribe();
+    window.addEventListener(EVENTO_LEIDO, contar);
+    return () => {
+      window.removeEventListener(EVENTO_LEIDO, contar);
+      void supabase.removeChannel(canal);
+    };
+  }, [miId]);
+  return n;
+}
+
+/** Personas que bloqueé. */
+export function useBloqueados() {
+  const [ids, setIds] = useState<string[]>([]);
+  useEffect(() => {
+    void supabase.rpc("chat_mis_bloqueados").then(({ data }) => setIds((data as string[] | null) ?? []));
+  }, []);
+  const cambiar = useCallback(async (id: string, bloquear: boolean): Promise<string> => {
+    const { error } = await supabase.rpc("chat_bloquear", { p_usuario: id, p_bloquear: bloquear });
+    if (error) return error.message;
+    setIds((x) => (bloquear ? [...x, id] : x.filter((y) => y !== id)));
+    return "";
+  }, []);
+  return { ids, cambiar };
 }

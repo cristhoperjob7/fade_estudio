@@ -867,3 +867,38 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
 @keyframes st-destello { 50% { transform: rotate(90deg) scale(1.15); opacity: .75; } }
 @keyframes st-despega { 50% { transform: translate(6%, -10%); } }
 @media (prefers-reduced-motion: reduce) { .st-anim, .chat-panel { animation: none; } }
+
+/* Chat: conectados por rol y privados */
+.chat-tit { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.chat-atras { all: unset; cursor: pointer; flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: var(--mut); }
+.chat-atras:hover { background: var(--s2); color: var(--tx); }
+.chat-atras:focus-visible { outline: 2px solid var(--blue); }
+.chat-cab { flex-wrap: wrap; }
+.chat-btn-miem { margin-left: auto; }
+@media (min-width: 1024px) { .chat-btn-miem { display: none; } }
+.chat-cols { flex: 1; min-height: 0; display: flex; gap: 14px; }
+.chat-zona { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.chat-lat { display: none; }
+@media (min-width: 1024px) { .chat-lat { display: block; width: 250px; flex: none; margin-top: 12px; overflow-y: auto; border: 1px solid var(--line); border-radius: 18px; background: var(--s1); padding: 14px 10px; } }
+.chat-miembros h2 { font-size: 14px; margin: 0 4px 10px; }
+.chat-miembros section + section { margin-top: 14px; }
+.chat-miembros h3 { font-size: 12px; color: var(--mut); font-weight: 700; margin: 0 4px 4px; display: flex; justify-content: space-between; }
+.chat-miem { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 12px; cursor: pointer; }
+.chat-miem:hover:not(:disabled) { background: rgba(255, 255, 255, .06); }
+.chat-miem:disabled { cursor: default; }
+.chat-miem:focus-visible { outline: 2px solid var(--blue); }
+.chat-miem .avatar { width: 34px; height: 34px; font-size: 12px; flex: none; }
+.chat-miem-t { display: grid; min-width: 0; font-size: 13.5px; }
+.chat-miem-t b, .chat-miem-t small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-miem-t small { color: var(--mut); font-size: 12px; }
+.chat-no-leidos { font-style: normal; margin-left: 6px; min-width: 18px; padding: 1px 6px; border-radius: 99px; background: #ef4444; color: #fff; font-size: 11px; font-weight: 700; text-align: center; display: inline-block; }
+.chat-bandeja { flex: 1; min-height: 0; overflow-y: auto; margin-top: 12px; display: grid; align-content: start; gap: 6px; }
+.chat-fila { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--s1); }
+.chat-fila:hover { background: var(--s2); }
+.chat-fila:focus-visible { outline: 2px solid var(--blue); }
+.chat-fila .avatar { width: 40px; height: 40px; flex: none; }
+.chat-fila-t { flex: 1; min-width: 0; display: grid; }
+.chat-fila-t small { color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-fila-d { display: grid; justify-items: end; gap: 4px; }
+.chat-fila-d time { color: #6b7385; font-size: 11.5px; }
+.chat-bloq { margin: 0; border-radius: 0 0 18px 18px; text-align: center; }

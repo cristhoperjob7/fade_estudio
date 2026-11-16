@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Avatar, { iniciales } from "../components/Avatar";
+import Hoja from "../components/Hoja";
 import Icon from "../components/Icon";
 import Sticker from "../components/Sticker";
 import { useToast } from "../components/Toast";
 import { useAuth } from "../lib/auth";
-import { PACKS, puedeUsarPack, useChat, useSalas } from "../lib/chat";
-import type { Mensaje, PlanChat } from "../lib/chat";
-import { urlFoto } from "../lib/perfil";
+import { PACKS, marcarLeido, puedeUsarPack, salaPrivada, useBloqueados, useChat, usePrivados, useSalas } from "../lib/chat";
+import type { Conectado, Mensaje, PlanChat } from "../lib/chat";
+import { urlFoto, useMiPerfil } from "../lib/perfil";
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Santiago" });
 
@@ -21,6 +22,14 @@ function insignia(m: Mensaje): string {
   return m.autor_plan === "vip" ? "VIP" : m.autor_plan === "pro" ? "PRO" : "";
 }
 
+const GRUPOS: { clave: string; titulo: string; es: (c: Conectado) => boolean }[] = [
+  { clave: "sa", titulo: "Administración", es: (c) => c.rol === "superadmin" },
+  { clave: "vip", titulo: "VIP", es: (c) => c.rol !== "superadmin" && c.plan === "vip" },
+  { clave: "pro", titulo: "Pro", es: (c) => c.rol !== "superadmin" && c.plan === "pro" },
+  { clave: "bas", titulo: "Barberos", es: (c) => c.rol !== "superadmin" && c.plan !== "vip" && c.plan !== "pro" },
+];
+const claseC = (c: Conectado) => (c.rol === "superadmin" ? "cn-sa" : c.plan === "vip" ? "cn-vip" : c.plan === "pro" ? "cn-pro" : "cn-bas");
+
 /** Chat de barberos: una sala general y una por comuna, en vivo. */
 export default function Chat() {
   const { sesion, esAdmin, perfil, barberia } = useAuth();
@@ -29,8 +38,31 @@ export default function Chat() {
   const soyAdmin = esAdmin && !perfil;
   const miPlan: PlanChat = soyAdmin ? "vip" : ((barberia?.plan ?? "basico") as PlanChat);
   const salas = useSalas();
+  const { datos: mio } = useMiPerfil(true);
   const [sala, setSala] = useState("general");
-  const { mensajes, cargando, enLinea, fijado, enviar, borrar, silenciar, fijar } = useChat(sala, miId);
+  const [vista, setVista] = useState<"sala" | "privados" | "dm">("sala");
+  const [dm, setDm] = useState<Conectado | null>(null);
+  const [miembros, setMiembros] = useState(false);
+  const priv = usePrivados(miId);
+  const bloq = useBloqueados();
+  const yo = useMemo<Conectado | null>(
+    () =>
+      miId && mio
+        ? {
+            id: miId,
+            nombre: [mio.nombre, mio.apellidos].filter(Boolean).join(" ") || (soyAdmin ? "Superadmin" : "Barbero"),
+            rol: soyAdmin ? "superadmin" : perfil?.rol === "dueno" ? "dueno" : "barbero",
+            plan: miPlan,
+            barberia: soyAdmin ? "" : (barberia?.nombre ?? ""),
+            avatar: mio.avatar_path ?? null,
+          }
+        : null,
+    [miId, mio, soyAdmin, perfil?.rol, miPlan, barberia?.nombre],
+  );
+  const salaActual = vista === "dm" && dm && miId ? salaPrivada(miId, dm.id) : sala;
+  const { mensajes, cargando, conectados, enLinea, fijado, enviar, borrar, silenciar, fijar } = useChat(salaActual, yo, vista === "dm" ? dm?.id : undefined);
+  const enDm = vista === "dm" && !!dm;
+  const bloqueado = !!dm && bloq.ids.includes(dm.id);
   const [texto, setTexto] = useState("");
   const [panel, setPanel] = useState(false);
   const [pack, setPack] = useState<PlanChat>("basico");
@@ -41,7 +73,41 @@ export default function Chat() {
   const lista = useRef<HTMLDivElement>(null);
   const abajo = useRef(true);
 
-  const nombreSala = salas?.find((s) => s.clave === sala)?.nombre ?? "Barberos de Chile";
+  const nombreSala = enDm ? dm!.nombre : (salas?.find((s) => s.clave === sala)?.nombre ?? "Barberos de Chile");
+
+  // Si estoy mirando una conversación privada, se marca como leída cada vez que llega algo.
+  useEffect(() => {
+    if (enDm) void marcarLeido(salaActual);
+  }, [enDm, salaActual, mensajes.length]);
+
+  function abrirPrivado(c: Conectado) {
+    if (c.id === miId) return;
+    setDm(c);
+    setVista("dm");
+    setMiembros(false);
+    abajo.current = true;
+  }
+  const grupos = GRUPOS.map((g) => ({ ...g, gente: conectados.filter(g.es).sort((a, b) => a.nombre.localeCompare(b.nombre)) })).filter((g) => g.gente.length > 0);
+  const lateral = (
+    <div className="chat-miembros">
+      <h2>Conectados · {enLinea}</h2>
+      {grupos.length === 0 && <p className="suave">Nadie más por ahora.</p>}
+      {grupos.map((g) => (
+        <section key={g.clave}>
+          <h3>{g.titulo} <span>{g.gente.length}</span></h3>
+          {g.gente.map((c) => (
+            <button key={c.id} type="button" className="chat-miem" disabled={c.id === miId} onClick={() => abrirPrivado(c)} title={c.id === miId ? "Tú" : "Escribir en privado"}>
+              <Avatar sencillo iniciales={iniciales(c.nombre)} foto={urlFoto(c.avatar)} rojo={c.rol === "superadmin"} plan={c.plan} />
+              <span className="chat-miem-t">
+                <b className={claseC(c)}>{c.nombre}{c.id === miId ? " (tú)" : ""}</b>
+                {c.rol !== "superadmin" && c.barberia && <small>{c.barberia}</small>}
+              </span>
+            </button>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
   const tieneComuna = (salas ?? []).some((s) => s.clave !== "general");
 
   useEffect(() => {
@@ -67,13 +133,38 @@ export default function Chat() {
   return (
     <div className="chat">
       <div className="chat-cab">
-        <div>
-          <h1 className="titulo"># {nombreSala}</h1>
-          <p className="suave">
-            <i className="chat-punto" /> {enLinea} {enLinea === 1 ? "conectado" : "conectados"}
-          </p>
+        <div className="chat-tit">
+          {vista !== "sala" && (
+            <button type="button" className="chat-atras" aria-label="Volver" onClick={() => setVista(vista === "dm" ? "privados" : "sala")}>
+              <Icon nombre="back" size={20} />
+            </button>
+          )}
+          <div>
+            <h1 className="titulo">{vista === "privados" ? "Privados" : enDm ? nombreSala : `# ${nombreSala}`}</h1>
+            <p className="suave">
+              {vista === "privados" ? (
+                "Tus conversaciones uno a uno"
+              ) : enDm ? (
+                dm!.rol === "superadmin" ? "Administración" : dm!.barberia
+              ) : (
+                <>
+                  <i className="chat-punto" /> {enLinea} {enLinea === 1 ? "conectado" : "conectados"}
+                </>
+              )}
+            </p>
+          </div>
         </div>
-        {soyAdmin && (
+        {enDm && (
+          <button type="button" className="btn btn-borde btn-chico" onClick={() => void bloq.cambiar(dm!.id, !bloqueado).then((m) => avisar(m || (bloqueado ? "Desbloqueado" : "Bloqueado"), m ? "error" : undefined))}>
+            {bloqueado ? "Desbloquear" : "Bloquear"}
+          </button>
+        )}
+        {vista === "sala" && (
+          <button type="button" className="btn btn-borde btn-chico chat-btn-miem" onClick={() => setMiembros(true)}>
+            Conectados
+          </button>
+        )}
+        {soyAdmin && vista === "sala" && (
           <button
             type="button"
             className="btn btn-borde btn-chico"
@@ -87,23 +178,26 @@ export default function Chat() {
         )}
       </div>
 
-      {salas && salas.length > 1 && (
+      {vista !== "dm" && (
         <div className="chat-salas" role="tablist" aria-label="Salas">
-          {salas.map((s) => (
-            <button key={s.clave} type="button" role="tab" aria-selected={sala === s.clave} className={sala === s.clave ? "on" : ""} onClick={() => setSala(s.clave)}>
+          {(salas ?? []).map((s) => (
+            <button key={s.clave} type="button" role="tab" aria-selected={vista === "sala" && sala === s.clave} className={vista === "sala" && sala === s.clave ? "on" : ""} onClick={() => { setSala(s.clave); setVista("sala"); }}>
               {s.nombre}
             </button>
           ))}
+          <button type="button" role="tab" aria-selected={vista === "privados"} className={vista === "privados" ? "on" : ""} onClick={() => setVista("privados")}>
+            Privados{priv.sinLeer > 0 && <em className="chat-no-leidos">{priv.sinLeer}</em>}
+          </button>
         </div>
       )}
-      {salas && !tieneComuna && !soyAdmin && (
+      {vista === "sala" && salas && !tieneComuna && !soyAdmin && (
         <p className="chat-aviso">
           Para entrar a la sala de tu comuna, agrega la comuna en{" "}
           <Link to="/panel/ajustes">Ajustes → Barbería</Link> (lo hace el dueño).
         </p>
       )}
 
-      {editandoFijo && (
+      {vista === "sala" && editandoFijo && (
         <form
           className="chat-fijar"
           onSubmit={(e) => {
@@ -119,12 +213,32 @@ export default function Chat() {
           <button className="btn btn-primario btn-chico">Guardar</button>
         </form>
       )}
-      {fijado && (
+      {vista === "sala" && fijado && (
         <p className="chat-fijado" role="note">
           <b>Fijado</b> {fijado}
         </p>
       )}
 
+      {vista === "privados" ? (
+        <div className="chat-bandeja">
+          {priv.lista.length === 0 && <p className="chat-vacio">Aún no tienes conversaciones privadas. Toca a alguien en «Conectados» para escribirle.</p>}
+          {priv.lista.map((p) => (
+            <button key={p.sala} type="button" className="chat-fila" onClick={() => abrirPrivado(p)}>
+              <Avatar sencillo iniciales={iniciales(p.nombre)} foto={urlFoto(p.avatar)} rojo={p.rol === "superadmin"} plan={p.plan} />
+              <span className="chat-fila-t">
+                <b className={claseC(p)}>{p.nombre}</b>
+                <small>{p.ultimo}</small>
+              </span>
+              <span className="chat-fila-d">
+                <time>{hora(p.ultimo_en)}</time>
+                {p.no_leidos > 0 && <em className="chat-no-leidos">{p.no_leidos}</em>}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+      <div className="chat-cols">
+      <div className="chat-zona">
       <div
         className="chat-lista"
         ref={lista}
@@ -135,7 +249,7 @@ export default function Chat() {
         onClick={() => setMenu(null)}
       >
         {cargando && <p className="suave">Cargando…</p>}
-        {!cargando && mensajes.filter((m) => !m.borrado).length === 0 && <p className="chat-vacio">Aún no hay mensajes. ¡Escribe el primero!</p>}
+        {!cargando && mensajes.filter((m) => !m.borrado).length === 0 && <p className="chat-vacio">{enDm ? `Escríbele a ${dm!.nombre}.` : "Aún no hay mensajes. ¡Escribe el primero!"}</p>}
         {mensajes.map((m, i) => {
           if (m.borrado) return null;
           const previo = mensajes.slice(0, i).reverse().find((x) => !x.borrado);
@@ -165,7 +279,7 @@ export default function Chat() {
                   )}
                 </div>
               </div>
-              {(mio || soyAdmin) && (
+              {(mio || (soyAdmin && !enDm)) && (
                 <div className="chat-acc">
                   <button type="button" aria-label="Opciones del mensaje" onClick={(e) => { e.stopPropagation(); setMenu(menu === m.id ? null : m.id); }}>
                     <Icon nombre="mas3" size={18} />
@@ -175,7 +289,7 @@ export default function Chat() {
                       <button type="button" onClick={() => { void borrar(m.id); setMenu(null); }}>
                         Borrar mensaje
                       </button>
-                      {soyAdmin && !mio && (
+                      {soyAdmin && !mio && !enDm && (
                         <button
                           type="button"
                           onClick={() => {
@@ -195,6 +309,9 @@ export default function Chat() {
         })}
       </div>
 
+      {enDm && bloqueado ? (
+        <p className="chat-aviso chat-bloq">Bloqueaste a {dm!.nombre}. Desbloquéalo para volver a escribirle.</p>
+      ) : (
       <div className="chat-comp">
         {panel && (
           <div className="chat-panel" role="dialog" aria-label="Emoticones">
@@ -234,6 +351,16 @@ export default function Chat() {
           </button>
         </form>
       </div>
+      )}
+      </div>
+      {vista === "sala" && <aside className="chat-lat">{lateral}</aside>}
+      </div>
+      )}
+      {miembros && (
+        <Hoja titulo="Conectados" onCerrar={() => setMiembros(false)}>
+          {lateral}
+        </Hoja>
+      )}
     </div>
   );
 }

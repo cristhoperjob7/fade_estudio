@@ -4,6 +4,7 @@ import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { ROL_LABEL } from "../lib/types";
 import Avatar, { iniciales } from "./Avatar";
+import { useNoLeidos } from "../lib/chat";
 import { useMiPerfil } from "../lib/perfil";
 import Icon from "./Icon";
 import type { NombreIcono } from "./Icon";
@@ -16,7 +17,8 @@ export type Pestana = { ruta: string; texto: string; icono: NombreIcono; abajo?:
  * barra superior con el nombre de la sección y el contenido. Las opciones dependen del perfil.
  */
 export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
-  const { perfil, esAdmin, barberia: infoBarberia, cerrarSesion } = useAuth();
+  const { sesion, perfil, esAdmin, barberia: infoBarberia, cerrarSesion } = useAuth();
+  const dmSinLeer = useNoLeidos(sesion?.user.id);
   const navegar = useNavigate();
   const { pathname } = useLocation();
   const [barberia, setBarberia] = useState("");
@@ -122,6 +124,11 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
       {p.ruta === "/admin/solicitudes" && nuevas > 0 && (
         <em className="lat-insignia" aria-label={`${nuevas} nuevas`}>
           {nuevas}
+        </em>
+      )}
+      {p.ruta.endsWith("/chat") && dmSinLeer > 0 && (
+        <em className="lat-insignia" aria-label={`${dmSinLeer} mensajes privados sin leer`}>
+          {dmSinLeer}
         </em>
       )}
       {p.ruta === "/panel/reservas" && pendientes > 0 && (
