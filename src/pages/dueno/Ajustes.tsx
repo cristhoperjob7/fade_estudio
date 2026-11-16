@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../../components/Toast";
 import AvisosPush from "../../components/AvisosPush";
@@ -282,8 +283,19 @@ export default function Ajustes() {
         </Ficha>
       </Seccion>
 
-      <Seccion titulo="Avisos en este celular" resumen="Entérate cuando llega un comprobante" icono="phone" abierta={abierta === "avisos"} onToggle={() => alternar("avisos")}>
-        <AvisosPush />
+      <Seccion titulo="Avisos en este celular" resumen={barberia?.plan === "basico" ? "Disponible en el plan Pro" : "Entérate cuando llega un comprobante"} icono="phone" abierta={abierta === "avisos"} onToggle={() => alternar("avisos")}>
+        {barberia?.plan === "basico" ? (
+          <>
+            <p className="suave" style={{ margin: 0 }}>
+              Los avisos al celular, para enterarte apenas llega un comprobante, vienen con el plan Pro o VIP.
+            </p>
+            <Link to="/panel/plan" className="btn btn-primario btn-chico">
+              Ver planes
+            </Link>
+          </>
+        ) : (
+          <AvisosPush />
+        )}
       </Seccion>
 
       <div style={{ marginTop: 18 }}>

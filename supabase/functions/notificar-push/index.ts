@@ -66,6 +66,9 @@ Deno.serve(async (req) => {
     // Llamada de la base de datos: avisar solo a los dueños activos de ESA barbería.
     const c = cuerpo as { cita_id?: string; barberia_id?: string; cliente?: string; servicio?: string; fecha?: string; inicio_min?: number; monto?: number };
     if (!c.barberia_id) return json({ error: "Falta la barbería" }, 400);
+    // Los avisos al celular son de los planes Pro y VIP: el Básico no recibe.
+    const { data: bar } = await admin.from("barberias").select("plan").eq("id", c.barberia_id).maybeSingle();
+    if (!bar || bar.plan === "basico") return json({ enviados: 0, eliminados: 0, motivo: "plan basico" });
     const { data: duenos } = await admin
       .from("perfiles")
       .select("id")
@@ -87,10 +90,14 @@ Deno.serve(async (req) => {
     const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
     const { data: u } = await admin.auth.getUser(jwt);
     if (!u?.user) return json({ error: "Sesión no válida" }, 401);
-    const { data: perfil } = await admin.from("perfiles").select("rol,activo").eq("id", u.user.id).maybeSingle();
+    const { data: perfil } = await admin.from("perfiles").select("rol,activo,barberia_id").eq("id", u.user.id).maybeSingle();
     const { data: sa } = await admin.from("superadmins").select("usuario_id").eq("usuario_id", u.user.id).maybeSingle();
     const esDueno = !!perfil && perfil.rol === "dueno" && perfil.activo;
     if (!esDueno && !sa) return json({ error: "Solo el dueño o el superadmin pueden probar" }, 403);
+    if (!sa && perfil) {
+      const { data: bar } = await admin.from("barberias").select("plan").eq("id", perfil.barberia_id).maybeSingle();
+      if (!bar || bar.plan === "basico") return json({ error: "Los avisos están disponibles desde el plan Pro" }, 403);
+    }
     usuarios = [u.user.id];
     aviso = {
       titulo: "Los avisos funcionan",
