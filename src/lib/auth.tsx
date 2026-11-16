@@ -15,12 +15,9 @@ type Contexto = {
   esAdmin: boolean;
   /** barbería del personal (con su estado de suscripción); null para el superadmin */
   barberia: BarberiaInfo | null;
-  /** tipo: desde qué pestaña del acceso se entra (barbero o administración) */
-  iniciarSesion: (correo: string, clave: string, tipo?: TipoAcceso) => Promise<string>;
+  iniciarSesion: (correo: string, clave: string) => Promise<string>;
   cerrarSesion: () => Promise<void>;
 };
-
-export type TipoAcceso = "barbero" | "admin";
 
 const Auth = createContext<Contexto | null>(null);
 
@@ -86,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [cargarPerfil]);
 
   const iniciarSesion = useCallback(
-    async (correo: string, clave: string, tipo?: TipoAcceso): Promise<string> => {
+    async (correo: string, clave: string): Promise<string> => {
       entrando.current = true;
       try {
         const { data, error } = await supabase.auth.signInWithPassword({ email: correo.trim(), password: clave });
@@ -96,16 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             : "No pudimos iniciar sesión. Intenta de nuevo.";
         }
         const r = await leer(data.session);
-        const esBarbero = r.perfil?.rol === "barbero";
-        const esAdministracion = r.esAdmin || r.perfil?.rol === "dueno";
-        if (tipo === "barbero" && !esBarbero && esAdministracion) {
-          await supabase.auth.signOut();
-          return "Esta cuenta es de administración. Entra por la pestaña Administración.";
-        }
-        if (tipo === "admin" && !esAdministracion && esBarbero) {
-          await supabase.auth.signOut();
-          return "Esta cuenta es de barbero. Entra por la pestaña Barbero.";
-        }
         setSesion(data.session);
         aplicar(r);
         return "";

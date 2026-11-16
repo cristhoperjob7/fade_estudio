@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import type { TipoAcceso } from "../lib/auth";
 import { configurado } from "../lib/supabase";
 import FadeLogo from "../components/FadeLogo";
 import Cartel, { Tira } from "../components/Cartel";
-import Icon from "../components/Icon";
 
 export default function Login() {
   const { perfil, esAdmin, sesion, cargando, iniciarSesion, cerrarSesion } = useAuth();
@@ -15,10 +13,9 @@ export default function Login() {
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const [tipo, setTipo] = useState<TipoAcceso>("barbero");
 
   useEffect(() => {
-    if (esAdmin && !perfil) navegar("/admin", { replace: true });
+    if (esAdmin) navegar("/admin", { replace: true });
     else if (perfil) navegar("/panel", { replace: true });
   }, [perfil, esAdmin, navegar]);
 
@@ -26,15 +23,12 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setEnviando(true);
-    const mensaje = await iniciarSesion(correo, clave, tipo);
+    const mensaje = await iniciarSesion(correo, clave);
     setEnviando(false);
     if (mensaje) setError(mensaje);
   };
 
   const sinAcceso = !cargando && sesion && !perfil && !esAdmin;
-
-  const [movido, setMovido] = useState(false);
-  const esBarbero = tipo === "barbero";
 
   return (
     <div className="acceso">
@@ -46,46 +40,8 @@ export default function Login() {
             <Tira />
           </div>
 
-          {!sinAcceso && (
-            <div className={`acceso-tipos ${esBarbero ? "es-barbero" : "es-admin"}${movido ? " movido" : ""}`} role="tablist" aria-label="Tipo de acceso">
-              <i className="acceso-ind" key={tipo} aria-hidden="true" />
-              <button
-                type="button"
-                role="tab"
-                aria-selected={esBarbero}
-                className={esBarbero ? "on" : ""}
-                onClick={() => {
-                  setTipo("barbero");
-                  setMovido(true);
-                  setError("");
-                }}
-              >
-                <Icon nombre="scissors" size={20} />
-                Barbero
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={!esBarbero}
-                className={!esBarbero ? "on" : ""}
-                onClick={() => {
-                  setTipo("admin");
-                  setMovido(true);
-                  setError("");
-                }}
-              >
-                <Icon nombre="shield" size={20} />
-                Administración
-              </button>
-            </div>
-          )}
-
-          <h1 key={`h-${tipo}`} className="fundir">{esBarbero ? "Acceso barberos" : "Acceso administración"}</h1>
-          <p key={`s-${tipo}`} className="acceso-sub fundir">
-            {esBarbero
-              ? "Entra para ver tu agenda del día y tus citas."
-              : "Para dueños de barbería y administradores de Fade Studio."}
-          </p>
+          <h1>Ingresar</h1>
+          <p className="acceso-sub">Entra con tu correo y tu clave.</p>
 
           {!configurado && (
             <p className="aviso error" role="alert">
@@ -131,14 +87,12 @@ export default function Login() {
                 </p>
               )}
               <button className="btn btn-primario" type="submit" disabled={enviando || !correo || !clave || !configurado}>
-                {enviando ? "Entrando…" : esBarbero ? "Entrar a mi agenda" : "Entrar al panel"}
+                {enviando ? "Entrando…" : "Entrar"}
               </button>
             </form>
           )}
 
-          <p key={`p-${tipo}`} className="acceso-pie fundir">
-            {esBarbero ? "¿Problemas para entrar? Pídele tu clave al administrador." : "¿Olvidaste tu clave? Escríbenos y la restablecemos."}
-          </p>
+          <p className="acceso-pie">¿Problemas para entrar? Pídele tu clave al dueño de tu barbería o escríbenos.</p>
           <Link to="/" className="enlace-volver">
             Volver al inicio
           </Link>
