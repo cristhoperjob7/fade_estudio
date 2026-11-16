@@ -7,8 +7,9 @@ import type { PaginaPro } from "../lib/publico";
 import { useToast } from "./Toast";
 
 const SOPORTE = ((import.meta.env.VITE_SOPORTE_WHATSAPP as string | undefined) ?? "").replace(/\D/g, "");
-const COLORES = ["#C8A26A", "#2563EB", "#1F8A5B", "#C0392B", "#8E5BD9", "#E07B39", "#D9A441", "#E4E4E7"];
-const VACIA: PaginaPro = { descripcion: "", color: "#C8A26A", logo_path: null, portada_path: null };
+const MAX_FOTOS = 8;
+const VACIA: PaginaPro = { descripcion: "", logo_path: null, portada_path: null, fotos: [] };
+const rutasDe = (p: PaginaPro): string[] => [p.logo_path, p.portada_path, ...p.fotos].filter((x): x is string => !!x);
 
 /** Reduce la foto al tamaño que se necesita (JPG) para que cargue rápido. */
 async function preparar(archivo: File, ancho: number, alto: number): Promise<Blob> {
@@ -26,7 +27,7 @@ async function preparar(archivo: File, ancho: number, alto: number): Promise<Blo
   return new Promise((ok, mal) => lienzo.toBlob((b) => (b ? ok(b) : mal(new Error("No se pudo leer la foto"))), "image/jpeg", 0.85));
 }
 
-/** Ajustes → Mi página: logo, portada, color y descripción de la plantilla (Pro y VIP). */
+/** Ajustes → Mi página: logo, portada, fotos de trabajos y descripción de la plantilla Pro. */
 export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string) => void }) {
   const { barberia } = useAuth();
   const avisar = useToast();
@@ -37,12 +38,14 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
   const [trabajando, setTrabajando] = useState("");
   const entLogo = useRef<HTMLInputElement>(null);
   const entPortada = useRef<HTMLInputElement>(null);
+  const entFotos = useRef<HTMLInputElement>(null);
   const plan = barberia?.plan ?? "basico";
 
   useEffect(() => {
     if (plan !== "pro") return;
     void supabase.rpc("mi_pagina").then(({ data }) => {
       const d = { ...VACIA, ...((data as Partial<PaginaPro> | null) ?? {}) };
+      d.fotos = d.fotos ?? [];
       setGuardada(d);
       setBorrador(d);
       setCargado(true);
@@ -56,7 +59,7 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
           <b>Tu página es a medida.</b>
         </p>
         <p className="suave" style={{ margin: 0 }}>
-          Con el plan VIP la página de tu barbería se diseña contigo. Para cambiar fotos, textos o colores, escríbenos y lo hacemos juntos.
+          Con el plan VIP la página de tu barbería se diseña contigo. Para cambiar fotos, textos o diseño, escríbenos y lo hacemos juntos.
         </p>
         <div className="acciones">
           {SOPORTE && (
@@ -80,8 +83,7 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
     return (
       <>
         <p className="suave" style={{ margin: 0 }}>
-          Tu plan Básico usa una página simple: el nombre de tu barbería y la agenda para reservar. Con el plan Pro puedes poner tu logo, una foto de
-          portada, tu color y una descripción.
+          Tu plan Básico usa una página simple: el nombre de tu barbería y la agenda para reservar. Con el plan Pro tienes una página elegante con tu logo, una portada grande, hasta 8 fotos de tus trabajos y un mapa para llegar.
         </p>
         <Link to="/panel/plan" className="btn btn-primario btn-chico">
           Ver planes
@@ -95,7 +97,7 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
     if (!archivo || !barberia) return;
     setTrabajando(tipo);
     try {
-      const blob = await (tipo === "logo" ? preparar(archivo, 512, 512) : preparar(archivo, 1200, 600));
+      const blob = await (tipo === "logo" ? preparar(archivo, 512, 512) : preparar(archivo, 1920, 800));
       const path = `${barberia.id}/${tipo}-${Date.now()}.jpg`;
       const { error } = await supabase.storage.from("paginas").upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
       if (error) throw new Error("No se pudo subir la imagen");
@@ -107,36 +109,59 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
     }
   }
 
+  async function subirFotos(lista: FileList | null) {
+    if (!lista || !barberia) return;
+    const cupo = MAX_FOTOS - borrador.fotos.length;
+    const archivos = Array.from(lista).slice(0, Math.max(0, cupo));
+    if (lista.length > archivos.length) avisar(`Solo caben ${MAX_FOTOS} fotos. Se subieron las primeras.`, "error");
+    if (!archivos.length) return;
+    setTrabajando("fotos");
+    try {
+      const nuevas: string[] = [];
+      for (const [n, a] of archivos.entries()) {
+        const blob = await preparar(a, 1080, 1350);
+        const path = `${barberia.id}/trabajo-${Date.now()}-${n}.jpg`;
+        const { error } = await supabase.storage.from("paginas").upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
+        if (error) throw new Error("No se pudo subir una foto");
+        nuevas.push(path);
+      }
+      setBorrador((b) => ({ ...b, fotos: [...b.fotos, ...nuevas].slice(0, MAX_FOTOS) }));
+    } catch (e) {
+      avisar((e as Error).message, "error");
+    } finally {
+      setTrabajando("");
+    }
+  }
+
   async function guardar() {
     setTrabajando("guardar");
     const { error } = await supabase.rpc("guardar_mi_pagina", {
       p_descripcion: borrador.descripcion.trim(),
-      p_color: borrador.color,
       p_logo: borrador.logo_path,
       p_portada: borrador.portada_path,
+      p_fotos: borrador.fotos,
     });
     setTrabajando("");
     if (error) return avisar(error.message, "error");
     // Borra del almacenamiento las imágenes que ya no se usan.
-    const viejas = [guardada.logo_path, guardada.portada_path].filter((p): p is string => !!p && p !== borrador.logo_path && p !== borrador.portada_path);
+    const quedan = new Set(rutasDe(borrador));
+    const viejas = rutasDe(guardada).filter((p) => !quedan.has(p));
     if (viejas.length) void supabase.storage.from("paginas").remove(viejas);
     setGuardada(borrador);
     setEditando(false);
     avisar("Página guardada");
-    onGuardado?.(borrador.descripcion ? "Logo, portada y descripción" : "Logo y portada");
+    onGuardado?.(`${borrador.fotos.length} de ${MAX_FOTOS} fotos`);
   }
 
-  const verLogo = urlPagina((editando ? borrador : guardada).logo_path);
-  const verPortada = urlPagina((editando ? borrador : guardada).portada_path);
   const v = editando ? borrador : guardada;
+  const verLogo = urlPagina(v.logo_path);
+  const verPortada = urlPagina(v.portada_path);
   const enlace = barberia ? `/b/${barberia.slug}` : "/";
 
   return (
     <>
       <div className="mp-prev" style={{ backgroundImage: verPortada ? `url(${verPortada})` : undefined }}>
-        <span className="mp-logo" style={{ background: v.color }}>
-          {verLogo ? <img src={verLogo} alt="" /> : <b>{(barberia?.nombre ?? "?").slice(0, 2).toUpperCase()}</b>}
-        </span>
+        <span className="mp-logo">{verLogo ? <img src={verLogo} alt="" /> : <b>{(barberia?.nombre ?? "?").slice(0, 2).toUpperCase()}</b>}</span>
       </div>
 
       {!editando ? (
@@ -144,9 +169,12 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
           <p className="suave" style={{ margin: 0, whiteSpace: "pre-line" }}>
             {guardada.descripcion || "Aún no escribes una descripción."}
           </p>
-          <p className="suave chico" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-            Color de tu página <i className="mp-punto" style={{ background: guardada.color }} />
-          </p>
+          <div className="mp-fotos">
+            {guardada.fotos.map((f) => (
+              <span key={f} style={{ backgroundImage: `url(${urlPagina(f) ?? ""})` }} />
+            ))}
+            {guardada.fotos.length === 0 && <small className="suave">Aún no subes fotos de tus trabajos.</small>}
+          </div>
           <div className="acciones">
             <button className="btn btn-primario btn-chico" onClick={() => setEditando(true)}>
               Editar
@@ -156,42 +184,43 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
             </a>
           </div>
           <p className="suave chico" style={{ margin: 0 }}>
-            El nombre, la dirección y el WhatsApp se cambian en «Barbería», y los precios en «Servicios y precios».
+            El nombre, la dirección y el WhatsApp se cambian en «Barbería», y los precios en «Servicios y precios». El mapa usa la dirección de «Barbería».
           </p>
         </>
       ) : (
         <>
-          <div className="acciones">
+          <div className="acciones mp-botones">
             <button className="btn btn-borde btn-chico" disabled={trabajando !== ""} onClick={() => entLogo.current?.click()}>
               {trabajando === "logo" ? "Subiendo…" : borrador.logo_path ? "Cambiar logo" : "Subir logo"}
             </button>
             <button className="btn btn-borde btn-chico" disabled={trabajando !== ""} onClick={() => entPortada.current?.click()}>
               {trabajando === "portada" ? "Subiendo…" : borrador.portada_path ? "Cambiar portada" : "Subir portada"}
             </button>
-            {(borrador.logo_path || borrador.portada_path) && (
-              <button className="btn btn-borde btn-chico" onClick={() => setBorrador({ ...borrador, logo_path: null, portada_path: null })}>
-                Quitar fotos
-              </button>
-            )}
           </div>
+          <p className="suave chico" style={{ margin: 0 }}>
+            Portada: 1920 × 800 px, con lo importante al centro. Logo: cuadrado, mínimo 512 × 512 px. Fotos JPG, PNG o WEBP de hasta 3 MB.
+          </p>
           <input ref={entLogo} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { void subir(e.target.files?.[0], "logo"); e.target.value = ""; }} />
           <input ref={entPortada} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { void subir(e.target.files?.[0], "portada"); e.target.value = ""; }} />
+          <input ref={entFotos} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => { void subirFotos(e.target.files); e.target.value = ""; }} />
 
           <div className="campo">
-            <span>Color de tu página</span>
-            <div className="mp-colores">
-              {COLORES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  aria-label={`Color ${c}`}
-                  aria-pressed={borrador.color.toLowerCase() === c.toLowerCase()}
-                  className={borrador.color.toLowerCase() === c.toLowerCase() ? "on" : ""}
-                  style={{ background: c }}
-                  onClick={() => setBorrador({ ...borrador, color: c })}
-                />
+            <span>
+              Fotos de tus trabajos ({borrador.fotos.length} de {MAX_FOTOS})
+            </span>
+            <div className="mp-galeria">
+              {borrador.fotos.map((f, n) => (
+                <div key={f} className="mp-foto" style={{ backgroundImage: `url(${urlPagina(f) ?? ""})` }}>
+                  <button type="button" aria-label={`Quitar foto ${n + 1}`} onClick={() => setBorrador({ ...borrador, fotos: borrador.fotos.filter((x) => x !== f) })}>
+                    ×
+                  </button>
+                </div>
               ))}
-              <input type="color" aria-label="Otro color" value={borrador.color} onChange={(e) => setBorrador({ ...borrador, color: e.target.value.toUpperCase() })} />
+              {borrador.fotos.length < MAX_FOTOS && (
+                <button type="button" className="mp-agregar" disabled={trabajando !== ""} onClick={() => entFotos.current?.click()}>
+                  {trabajando === "fotos" ? "Subiendo…" : "+ Agregar"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -209,7 +238,8 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
               className="btn btn-borde btn-chico"
               disabled={trabajando !== ""}
               onClick={() => {
-                const nuevas = [borrador.logo_path, borrador.portada_path].filter((p): p is string => !!p && p !== guardada.logo_path && p !== guardada.portada_path);
+                const previas = new Set(rutasDe(guardada));
+                const nuevas = rutasDe(borrador).filter((p) => !previas.has(p));
                 if (nuevas.length) void supabase.storage.from("paginas").remove(nuevas);
                 setBorrador(guardada);
                 setEditando(false);

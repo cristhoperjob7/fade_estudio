@@ -6,6 +6,7 @@ import { diasTexto } from "../lib/reserva";
 import type { Servicio } from "../lib/types";
 import { useToast } from "./Toast";
 import Hoja from "./Hoja";
+import Selector from "./Selector";
 
 const DURACIONES = [30, 60, 90, 120, 150, 180];
 const DIAS = [
@@ -142,16 +143,10 @@ function FormServicio({
           <span>Descripción (opcional)</span>
           <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} maxLength={120} />
         </label>
-        <label className="campo">
+        <div className="campo">
           <span>Duración</span>
-          <select value={duracion} onChange={(e) => setDuracion(Number(e.target.value))}>
-            {DURACIONES.map((d) => (
-              <option key={d} value={d}>
-                {d} minutos
-              </option>
-            ))}
-          </select>
-        </label>
+          <Selector etiqueta="Duración" valor={String(duracion)} onCambio={(v) => setDuracion(Number(v))} opciones={DURACIONES.map((d) => ({ valor: String(d), etiqueta: `${d} minutos` }))} />
+        </div>
         <label className="campo">
           <span>Precio normal (CLP)</span>
           <input type="number" inputMode="numeric" min={0} value={precio} onChange={(e) => setPrecio(e.target.value)} required />

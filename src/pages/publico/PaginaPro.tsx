@@ -9,7 +9,7 @@ import { iniciales } from "../../components/Avatar";
 import { enlaceWhatsapp, formatearTelefono } from "../../lib/whatsapp";
 import type { Barbero } from "../../lib/types";
 
-/** Plantilla Pro («Portada»): foto grande, logo, color propio, servicios y equipo. La edita el dueño en Ajustes → Mi página. */
+/** Plantilla Pro «Clásica»: blanco y negro. Portada grande, logo, servicios, fotos de trabajos y mapa. La edita el dueño en Ajustes → Mi página. */
 export default function PaginaPro() {
   const slug = useSlug();
   const rutas = useRutas();
@@ -19,6 +19,7 @@ export default function PaginaPro() {
   const pag = datos?.pagina;
   const portada = urlPagina(pag?.portada_path);
   const logo = urlPagina(pag?.logo_path);
+  const fotos = pag?.fotos ?? [];
 
   useEffect(() => {
     cargarBarberos(slug)
@@ -27,6 +28,10 @@ export default function PaginaPro() {
   }, [slug]);
 
   const servicios = datos?.servicios ?? [];
+  const lugar = [aj.direccion, datos?.comuna].filter(Boolean).join(", ");
+  const mapa = lugar ? `https://maps.google.com/maps?q=${encodeURIComponent(`${lugar}, Chile`)}&z=16&output=embed` : "";
+  const abrirMapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lugar || aj.nombre}, Chile`)}`;
+
   return (
     <div className="pb pp pp-home" style={tema}>
       <PubNav inicio />
@@ -36,51 +41,26 @@ export default function PaginaPro() {
         </p>
       )}
 
-      <section className="pp-portada" style={portada ? { backgroundImage: `url(${portada})` } : undefined}>
-        <div className="pp-velo" />
-      </section>
+      <div className="pp-portada" role="img" aria-label={`Portada de ${aj.nombre}`} style={portada ? { backgroundImage: `url(${portada})` } : undefined} />
 
-      <div className="pb-w pp-cuerpo">
+      <div className="pp-cuerpo">
         <div className="pp-logo" aria-hidden="true">
           {logo ? <img src={logo} alt="" /> : <span>{iniciales(aj.nombre)}</span>}
         </div>
         <h1 className="pp-nombre">{aj.nombre}</h1>
         {pag?.descripcion && <p className="pp-desc">{pag.descripcion}</p>}
-        <p className="pp-dato">
-          {aj.direccion && <>{aj.direccion} · </>}
-          {hm(aj.hora_apertura)} a {hm(aj.hora_cierre)}
-        </p>
-
-        <div className="pp-pildoras">
-          <Link to={rutas.reservar} className="pp-pil on">
-            Reservar
-          </Link>
-          <a href="#servicios" className="pp-pil">
-            Servicios
-          </a>
-          {equipo.length > 1 && (
-            <a href="#equipo" className="pp-pil">
-              Equipo
-            </a>
-          )}
-          {aj.direccion && (
-            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${aj.nombre} ${aj.direccion}`)}`} target="_blank" rel="noreferrer" className="pp-pil">
-              Cómo llegar
-            </a>
-          )}
-          <a href="#contacto" className="pp-pil">
-            Contacto
-          </a>
-        </div>
+        <Link to={rutas.reservar} className="pp-reservar-uno">
+          Reservar hora
+        </Link>
 
         <section id="servicios" className="pp-sec">
+          <h2>Servicios</h2>
           <ul className="pp-servicios">
             {servicios.map((s) => (
               <li key={s.id}>
-                <span>
-                  <b>{s.nombre}</b>
-                  <small>{s.duracion_min} min</small>
-                </span>
+                <b>{s.nombre}</b>
+                <i aria-hidden="true" />
+                <small>{s.duracion_min} min</small>
                 <span className="pp-precio">
                   {s.precio_promo !== null && <s>{clp(s.precio)}</s>}
                   {clp(s.precio_promo ?? s.precio)}
@@ -90,9 +70,22 @@ export default function PaginaPro() {
           </ul>
         </section>
 
+        {fotos.length > 0 && (
+          <section id="trabajos" className="pp-sec">
+            <h2>Trabajos</h2>
+            <ul className="pp-galeria">
+              {fotos.map((f, n) => (
+                <li key={f}>
+                  <img src={urlPagina(f) ?? ""} alt={`Trabajo ${n + 1} de ${aj.nombre}`} loading="lazy" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {equipo.length > 1 && (
           <section id="equipo" className="pp-sec">
-            <h2>Nuestro equipo</h2>
+            <h2>Equipo</h2>
             <ul className="pp-equipo">
               {equipo.map((b) => (
                 <li key={b.id}>
@@ -104,12 +97,23 @@ export default function PaginaPro() {
           </section>
         )}
 
-        <section id="contacto" className="pp-sec pp-contacto">
-          {aj.whatsapp && (
-            <a href={enlaceWhatsapp(aj.whatsapp, "Hola, quiero consultar por una hora")} target="_blank" rel="noreferrer">
-              WhatsApp {formatearTelefono(aj.whatsapp)}
+        <section id="llegar" className="pp-sec">
+          <h2>Cómo llegar</h2>
+          {mapa && <iframe className="pp-mapa" title={`Mapa de ${aj.nombre}`} src={mapa} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />}
+          <p className="pp-dir">
+            {lugar && <span>{lugar}</span>}
+            <span>Todos los días · {hm(aj.hora_apertura)} a {hm(aj.hora_cierre)}</span>
+          </p>
+          <div className="pp-links">
+            <a className="pp-pildora" href={abrirMapa} target="_blank" rel="noreferrer">
+              Abrir en Google Maps
             </a>
-          )}
+            {aj.whatsapp && (
+              <a className="pp-pildora" href={enlaceWhatsapp(aj.whatsapp, "Hola, quiero consultar por una hora")} target="_blank" rel="noreferrer">
+                WhatsApp {formatearTelefono(aj.whatsapp)}
+              </a>
+            )}
+          </div>
         </section>
       </div>
 

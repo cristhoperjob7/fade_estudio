@@ -44,7 +44,7 @@ export default function PubNav({ completa = false, inicio = false }: { completa?
             onContextMenu={(e) => e.preventDefault()}
             onClick={(e) => largo.current && e.preventDefault()}
           >
-            {logo ? <img src={logo} alt="" width={36} height={36} draggable={false} /> : null}
+            {logo && !inicio ? <img src={logo} alt="" width={36} height={36} draggable={false} /> : null}
             <b>{aj.nombre}</b>
           </Link>
           <span className="pp-nav-lado" aria-hidden="true" />

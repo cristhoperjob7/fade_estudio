@@ -133,7 +133,7 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
   );
 
   return (
-    <div className={`panel${rojo ? " panel-rojo" : ""}`}>
+    <div className={`panel${rojo ? " panel-rojo" : ` panel-${plan}`}`}>
       <aside ref={lateral} id="menu-lateral" className={`lateral${abierto ? " abierto" : ""}`} aria-label="Menú principal">
         <div className="lat-marca">
           <svg className="lat-logo" viewBox="0 0 40 30" width="34" height="26" aria-hidden="true">

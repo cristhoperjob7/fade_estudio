@@ -16,10 +16,12 @@ export type AjustesPublicos = {
 };
 
 export type PlanClave = "basico" | "pro" | "vip";
-export type PaginaPro = { descripcion: string; color: string; logo_path: string | null; portada_path: string | null };
+export type PaginaPro = { descripcion: string; logo_path: string | null; portada_path: string | null; fotos: string[] };
 
 export type DatosPublicos = AjustesPublicos & {
   slug: string;
+  region?: string;
+  comuna?: string;
   plan?: PlanClave;
   /** Plantilla editable (solo Pro y VIP). null si todavía no la personalizó. */
   pagina?: PaginaPro | null;
@@ -56,21 +58,11 @@ export function useEsPlantilla(): boolean {
   return datos.plan === "pro" || !PAGINAS_A_MEDIDA[slug];
 }
 
-/** Texto negro o blanco según el color de fondo, para que siempre se lea. */
-function textoSobre(hex: string): string {
-  const n = parseInt(hex.slice(1), 16);
-  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return lum > 0.6 ? "#15110a" : "#ffffff";
-}
-
-/** Color de la barbería (plantilla Pro) como variables de la página pública. */
+/** La plantilla Pro es en blanco y negro: acento blanco con texto negro. */
 export function useTemaPublico(): CSSProperties | undefined {
-  const { datos } = useBarberiaPublica();
   const plantilla = useEsPlantilla();
-  const c = plantilla ? datos?.pagina?.color : undefined;
   if (!plantilla) return undefined;
-  const color = c && /^#[0-9a-f]{6}$/i.test(c) ? c : "#C8A26A";
-  return { "--blue": color, "--gold": color, "--acento": color, "--on-acento": textoSobre(color) } as CSSProperties;
+  return { "--blue": "#ffffff", "--gold": "#ffffff", "--acento": "#ffffff", "--on-acento": "#000000" } as CSSProperties;
 }
 
 /** Dirección de la barbería: /b/<slug>/..., o la de por defecto cuando se entra por la raíz. */

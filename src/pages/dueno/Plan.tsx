@@ -7,6 +7,7 @@ import { diasHasta } from "../../lib/admin";
 import { PLAN_LABEL } from "../../lib/types";
 import type { Plan } from "../../lib/types";
 import Hoja from "../../components/Hoja";
+import Pestanitas from "../../components/Pestanitas";
 import CodigoDescuento from "../../components/CodigoDescuento";
 import type { CodigoValido } from "../../components/CodigoDescuento";
 
@@ -117,14 +118,15 @@ export default function PlanDueno() {
 
       {actual === "basico" && (
         <>
-          <div className="pestanitas" role="tablist" aria-label="Pago">
-            <button role="tab" aria-selected={ciclo === "mensual"} className={ciclo === "mensual" ? "on" : ""} onClick={() => setCiclo("mensual")}>
-              Mensual
-            </button>
-            <button role="tab" aria-selected={ciclo === "anual"} className={ciclo === "anual" ? "on" : ""} onClick={() => setCiclo("anual")}>
-              Anual
-            </button>
-          </div>
+          <Pestanitas
+            etiqueta="Pago"
+            valor={ciclo}
+            onCambio={setCiclo}
+            opciones={[
+              { valor: "mensual", etiqueta: "Mensual" },
+              { valor: "anual", etiqueta: "Anual" },
+            ]}
+          />
           <div className="tabla-planes" role="table" aria-label="Comparación de planes">
             <div className="tp-fila tp-cab" role="row">
               <span />

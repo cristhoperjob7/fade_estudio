@@ -4,6 +4,8 @@ import { useAuth } from "../lib/auth";
 import { clp } from "../lib/dinero";
 import { diaSemana, fechaLarga, hm, hoyChile, sumarDias } from "../lib/fecha";
 import Icon from "../components/Icon";
+import Selector from "../components/Selector";
+import Pestanitas from "../components/Pestanitas";
 
 type Fila = {
   id: string;
@@ -102,14 +104,15 @@ export default function Historial() {
       <h1 className="titulo">Historial</h1>
       <p className="suave">Servicios completados.</p>
 
-      <div className="pestanitas" role="tablist" aria-label="Periodo">
-        <button role="tab" aria-selected={periodo === "semana"} className={periodo === "semana" ? "on" : ""} onClick={() => setPeriodo("semana")}>
-          Semana
-        </button>
-        <button role="tab" aria-selected={periodo === "mes"} className={periodo === "mes" ? "on" : ""} onClick={() => setPeriodo("mes")}>
-          Mes
-        </button>
-      </div>
+      <Pestanitas
+        etiqueta="Periodo"
+        valor={periodo}
+        onCambio={setPeriodo}
+        opciones={[
+          { valor: "semana", etiqueta: "Semana" },
+          { valor: "mes", etiqueta: "Mes" },
+        ]}
+      />
 
       <div className="hist-barra">
         <button className="icono-btn" onClick={() => mover(-1)} aria-label="Anterior">
@@ -128,14 +131,12 @@ export default function Historial() {
 
       {esDueno && barberos.length > 1 && (
         <div className="hist-filtros">
-          <select value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Barbero">
-            <option value="">Todos los barberos</option>
-            {barberos.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.nombre}
-              </option>
-            ))}
-          </select>
+          <Selector
+            etiqueta="Barbero"
+            valor={filtro}
+            onCambio={setFiltro}
+            opciones={[{ valor: "", etiqueta: "Todos los barberos" }, ...barberos.map((b) => ({ valor: b.id, etiqueta: b.nombre }))]}
+          />
         </div>
       )}
 

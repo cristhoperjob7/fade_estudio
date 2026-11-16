@@ -15,6 +15,7 @@ import { useToast } from "../../components/Toast";
 import Hoja from "../../components/Hoja";
 import Icon from "../../components/Icon";
 import SelectorComuna from "../../components/SelectorComuna";
+import Selector from "../../components/Selector";
 
 type Filtro = "todas" | "recientes" | "vencer";
 
@@ -97,20 +98,27 @@ export default function Barberias() {
             {t}
           </button>
         ))}
-        <select aria-label="Comuna" value={fComuna} onChange={(e) => setFComuna(e.target.value)} className="barb-sel">
-          <option value="">Comuna</option>
-          {comunas.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <select aria-label="Plan" value={fPlan} onChange={(e) => setFPlan(e.target.value)} className="barb-sel">
-          <option value="">Plan</option>
-          <option value="basico">Básico</option>
-          <option value="pro">Pro</option>
-          <option value="vip">VIP</option>
-        </select>
+        <Selector
+          clase="sel-pildora"
+          etiqueta="Comuna"
+          valor={fComuna}
+          onCambio={setFComuna}
+          placeholder="Comuna"
+          opciones={[{ valor: "", etiqueta: "Todas las comunas" }, ...comunas.map((c) => ({ valor: c, etiqueta: c }))]}
+        />
+        <Selector
+          clase="sel-pildora"
+          etiqueta="Plan"
+          valor={fPlan}
+          onCambio={setFPlan}
+          placeholder="Plan"
+          opciones={[
+            { valor: "", etiqueta: "Todos los planes" },
+            { valor: "basico", etiqueta: "Básico" },
+            { valor: "pro", etiqueta: "Pro" },
+            { valor: "vip", etiqueta: "VIP" },
+          ]}
+        />
       </div>
 
       {grupos.map(([comuna, items]) => (
@@ -287,19 +295,19 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
           <small>{window.location.origin}/b/{slug || "..."}</small>
         </label>
         <div className="fila-dos">
-          <label className="campo">
+          <div className="campo">
             <span>Plan</span>
-            <select
-              value={plan}
-              onChange={(e) => {
-                setPlan(e.target.value as Plan);
-              }}
-            >
-              <option value="basico">Básico</option>
-              <option value="pro">Pro</option>
-              <option value="vip">VIP</option>
-            </select>
-          </label>
+            <Selector
+              etiqueta="Plan"
+              valor={plan}
+              onCambio={(v) => setPlan(v as Plan)}
+              opciones={[
+                { valor: "basico", etiqueta: "Básico" },
+                { valor: "pro", etiqueta: "Pro" },
+                { valor: "vip", etiqueta: "VIP" },
+              ]}
+            />
+          </div>
           <div className="campo">
             <span>Precio al mes</span>
             <b style={{ minHeight: 48, display: "flex", alignItems: "center" }}>{clp(precioDe(plan))}</b>
@@ -370,8 +378,9 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
   const [notas, setNotas] = useState(b.notas);
   const [gracia, setGracia] = useState(String(b.gracia_dias));
   const [vence, setVence] = useState(b.vence_el ?? "");
-  const [confirmar, setConfirmar] = useState<"" | "mes" | "anio" | "suspender">("");
+  const [confirmar, setConfirmar] = useState<"" | "mes" | "anio" | "suspender" | "reiniciar">("");
   const [otra, setOtra] = useState(false);
+  const [claveAbierta, setClaveAbierta] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
   const suspendida = b.estado === "suspendida";
@@ -426,6 +435,21 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
     onCambio();
   }
 
+  /** Deja la suscripción en 0 días: el vencimiento pasa a hoy. */
+  async function reiniciar() {
+    if (confirmar !== "reiniciar") return setConfirmar("reiniciar");
+    setConfirmar("");
+    setOcupado(true);
+    setError("");
+    const hoy = hoyChile();
+    const { data, error: err } = await supabase.from("barberias").update({ vence_el: hoy }).eq("id", b.id).select("id");
+    setOcupado(false);
+    if (err || !data || data.length === 0) return setError("No se pudo reiniciar la suscripción.");
+    setVence(hoy);
+    avisar("Suscripción reiniciada: quedó en 0 días");
+    onCambio();
+  }
+
   async function suspender() {
     if (confirmar !== "suspender") return setConfirmar("suspender");
     setConfirmar("");
@@ -437,7 +461,7 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
 
   return (
     <Hoja titulo={b.nombre} onCerrar={onCerrar} ancha>
-      <div className="ficha">
+      <div className="fcli">
         <aside className="ficha-izq">
           <div className="ficha-id">
             <div className="bar-ini" aria-hidden="true">
@@ -525,6 +549,21 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
           </div>
           {otra && <RegistrarPago b={b} onListo={() => { onCambio(); void cargarPagos(); setOtra(false); }} />}
 
+          <h3 className="ficha-lab">Vencimiento</h3>
+          <div className="fila-dos">
+            <label className="campo">
+              <span>Vence el</span>
+              <input type="date" value={vence} onChange={(ev) => setVence(ev.target.value)} />
+            </label>
+            <label className="campo">
+              <span>Días de gracia</span>
+              <input type="number" inputMode="numeric" min={0} max={30} value={gracia} onChange={(ev) => setGracia(ev.target.value)} />
+            </label>
+          </div>
+          <button type="button" className="btn btn-borde btn-chico ficha-editar" disabled={ocupado} onClick={() => void reiniciar()} onBlur={() => setConfirmar("")}>
+            {confirmar === "reiniciar" ? "¿Dejar en 0 días?" : "Reiniciar suscripción"}
+          </button>
+
           <h3 className="ficha-lab">Plan</h3>
           <div className="ficha-planes" role="radiogroup" aria-label="Plan">
             {PLANES_ORDEN.map((p) => (
@@ -550,40 +589,28 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
             <input value={notas} onChange={(ev) => setNotas(ev.target.value)} maxLength={300} placeholder="Ej. cliente recomendado, paga los primeros de mes" />
           </label>
 
-          <details className="ficha-mas">
-            <summary>Más opciones</summary>
-            <div className="form-hoja">
-              <div className="fila-dos">
-                <label className="campo">
-                  <span>Vence el</span>
-                  <input type="date" value={vence} onChange={(ev) => setVence(ev.target.value)} />
-                </label>
-                <label className="campo">
-                  <span>Días de gracia</span>
-                  <input type="number" inputMode="numeric" min={0} max={30} value={gracia} onChange={(ev) => setGracia(ev.target.value)} />
-                  <small>Días que puede entrar después de vencer.</small>
-                </label>
-              </div>
-            </div>
-            <DescuentoBarberia b={b} onListo={onCambio} />
-            <h3 style={{ fontSize: 15, margin: "18px 0 6px" }}>Historial de pagos</h3>
-            {pagos && pagos.length === 0 && <p className="suave">Todavía no hay pagos registrados.</p>}
-            <ul className="lista">
-              {(pagos ?? []).map((p) => (
-                <li key={p.id} className="fila">
-                  <span className="fila-cuerpo">
-                    <b className="num">{clp(p.monto)}</b>
-                    <small>
-                      {fechaMes(p.fecha)}
-                      {p.periodo_hasta ? ` · cubre hasta ${fechaMes(p.periodo_hasta)}` : ""}
-                      {p.nota ? ` · ${p.nota}` : ""}
-                    </small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <ClaveDueno b={b} />
-          </details>
+          <DescuentoBarberia b={b} onListo={onCambio} />
+
+          <h3 className="ficha-lab">Historial de pagos</h3>
+          {pagos && pagos.length === 0 && <p className="suave" style={{ margin: 0 }}>Todavía no hay pagos registrados.</p>}
+          <ul className="lista">
+            {(pagos ?? []).map((p) => (
+              <li key={p.id} className="fila">
+                <span className="fila-cuerpo">
+                  <b className="num">{clp(p.monto)}</b>
+                  <small>
+                    {fechaMes(p.fecha)}
+                    {p.periodo_hasta ? ` · cubre hasta ${fechaMes(p.periodo_hasta)}` : ""}
+                    {p.nota ? ` · ${p.nota}` : ""}
+                  </small>
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <button type="button" className="btn btn-borde btn-ancho" onClick={() => setClaveAbierta(true)}>
+            <Icon nombre="key" size={20} /> Cambiar clave del dueño
+          </button>
 
           {error && (
             <p className="aviso error" role="alert">
@@ -605,6 +632,11 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
           </div>
         </div>
       </div>
+      {claveAbierta && (
+        <Hoja titulo="Clave del dueño" onCerrar={() => setClaveAbierta(false)}>
+          <ClaveDueno b={b} onListo={() => setClaveAbierta(false)} />
+        </Hoja>
+      )}
     </Hoja>
   );
 }
@@ -702,16 +734,10 @@ function RegistrarPago({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }
           <span>Monto (CLP)</span>
           <input type="number" inputMode="numeric" min={0} value={monto} onChange={(e) => setMonto(e.target.value)} required />
         </label>
-        <label className="campo">
+        <div className="campo">
           <span>Meses que cubre</span>
-          <select value={meses} onChange={(e) => setMeses(e.target.value)}>
-            {[1, 2, 3, 6, 12].map((n) => (
-              <option key={n} value={n}>
-                {n} {n === 1 ? "mes" : "meses"}
-              </option>
-            ))}
-          </select>
-        </label>
+          <Selector etiqueta="Meses que cubre" valor={meses} onCambio={setMeses} opciones={[1, 2, 3, 6, 12].map((n) => ({ valor: String(n), etiqueta: `${n} ${n === 1 ? "mes" : "meses"}` }))} />
+        </div>
       </div>
       <label className="campo">
         <span>Nota (opcional)</span>
@@ -729,7 +755,7 @@ function RegistrarPago({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }
   );
 }
 
-function ClaveDueno({ b }: { b: BarberiaAdmin }) {
+function ClaveDueno({ b, onListo }: { b: BarberiaAdmin; onListo?: () => void }) {
   const avisar = useToast();
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
@@ -744,11 +770,11 @@ function ClaveDueno({ b }: { b: BarberiaAdmin }) {
     if (motivo) return setError(motivo);
     avisar("Clave del dueño cambiada");
     setClave("");
+    onListo?.();
   };
 
   return (
-    <div className="form-hoja" style={{ marginTop: 16 }}>
-      <h3 style={{ fontSize: 15 }}>Clave del dueño</h3>
+    <div className="form-hoja">
       <label className="campo">
         <span>Clave nueva</span>
         <input value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="off" placeholder="Mínimo 8 caracteres" />

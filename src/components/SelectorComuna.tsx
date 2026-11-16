@@ -1,4 +1,5 @@
 import { NOMBRES_REGION, REGIONES } from "../lib/chile";
+import Selector from "./Selector";
 
 /** Dos listas desplegables: región y, según la región, comuna. */
 export default function SelectorComuna({
@@ -14,28 +15,29 @@ export default function SelectorComuna({
 }) {
   return (
     <div className="fila-dos">
-      <label className="campo">
+      <div className="campo">
         <span>Región</span>
-        <select value={region} required={requerido} onChange={(e) => onCambio(e.target.value, "")}>
-          <option value="">Elige la región</option>
-          {NOMBRES_REGION.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="campo">
+        <Selector
+          etiqueta="Región"
+          valor={region}
+          requerido={requerido}
+          placeholder="Elige la región"
+          opciones={NOMBRES_REGION.map((r) => ({ valor: r, etiqueta: r }))}
+          onCambio={(v) => onCambio(v, "")}
+        />
+      </div>
+      <div className="campo">
         <span>Comuna</span>
-        <select value={comuna} required={requerido} disabled={!region} onChange={(e) => onCambio(region, e.target.value)}>
-          <option value="">{region ? "Elige la comuna" : "Primero la región"}</option>
-          {(REGIONES[region] ?? []).map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-      </label>
+        <Selector
+          etiqueta="Comuna"
+          valor={comuna}
+          requerido={requerido}
+          deshabilitado={!region}
+          placeholder={region ? "Elige la comuna" : "Primero la región"}
+          opciones={(REGIONES[region] ?? []).map((c) => ({ valor: c, etiqueta: c }))}
+          onCambio={(v) => onCambio(region, v)}
+        />
+      </div>
     </div>
   );
 }

@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../../components/Toast";
 import AvisosPush from "../../components/AvisosPush";
-import Seccion from "../../components/Seccion";
+import Cuadro from "../../components/Cuadro";
+import Selector from "../../components/Selector";
 import Ficha from "../../components/Ficha";
 import CambiarClave from "../../components/CambiarClave";
 import ServiciosEditor from "../../components/ServiciosEditor";
@@ -137,10 +138,12 @@ export default function Ajustes() {
   return (
     <>
       <h1 className="titulo">Ajustes</h1>
-      <p className="suave">Toca una sección para verla. Lo que cambies se refleja en la página de reservas.</p>
+      <p className="suave">Toca un cuadro para abrirlo. Lo que cambies se refleja en la página de reservas.</p>
+
+      <div className="cuadros">
 
       {barberia && (
-        <Seccion titulo="Tu página de reservas" resumen={enlace.replace(/^https?:\/\//, "")} icono="shop" abierta={abierta === "pagina"} onToggle={() => alternar("pagina")}>
+        <Cuadro titulo="Tu página de reservas" resumen={enlace.replace(/^https?:\/\//, "")} icono="link" abierta={abierta === "pagina"} onToggle={() => alternar("pagina")}>
           <p className="suave chico" style={{ margin: 0 }}>
             Comparte este enlace con tus clientes (Instagram, WhatsApp, Google).
           </p>
@@ -156,24 +159,24 @@ export default function Ajustes() {
           >
             Copiar enlace
           </button>
-        </Seccion>
+        </Cuadro>
       )}
 
-      <Seccion
+      <Cuadro
         titulo="Mi página"
         resumen={barberia?.plan === "basico" ? "Disponible en el plan Pro" : barberia?.plan === "vip" ? "Página a medida" : "Logo, portada, color y descripción"}
-        icono="shop"
+        icono="pagina"
         abierta={abierta === "mipagina"}
         onToggle={() => alternar("mipagina")}
       >
         <MiPagina />
-      </Seccion>
+      </Cuadro>
 
-      <Seccion titulo="Servicios y precios" resumen="Cortes, barba, ofertas por día" icono="scissors" abierta={abierta === "servicios"} onToggle={() => alternar("servicios")}>
+      <Cuadro titulo="Servicios y precios" resumen="Cortes, barba, ofertas por día" icono="scissors" abierta={abierta === "servicios"} onToggle={() => alternar("servicios")}>
         <ServiciosEditor />
-      </Seccion>
+      </Cuadro>
 
-      <Seccion titulo="Barbería" resumen={a.nombre} icono="home" abierta={abierta === "barberia"} onToggle={() => alternar("barberia")}>
+      <Cuadro titulo="Barbería" resumen={a.nombre} icono="home" abierta={abierta === "barberia"} onToggle={() => alternar("barberia")}>
         <Ficha
           filas={[
             { etiqueta: "Nombre", valor: a.nombre },
@@ -195,9 +198,9 @@ export default function Ajustes() {
           </Campo>
         </Ficha>
         <UbicacionBarberia />
-      </Seccion>
+      </Cuadro>
 
-      <Seccion titulo="Datos de transferencia" resumen={cuenta} icono="cash" abierta={abierta === "transferencia"} onToggle={() => alternar("transferencia")}>
+      <Cuadro titulo="Datos de transferencia" resumen={cuenta} icono="cash" abierta={abierta === "transferencia"} onToggle={() => alternar("transferencia")}>
         <Ficha
           filas={[
             { etiqueta: "Banco", valor: t.banco },
@@ -215,14 +218,10 @@ export default function Ajustes() {
           <Campo etiqueta="Banco">
             <input value={tr.banco} onChange={(e) => setTr({ ...tr, banco: e.target.value })} maxLength={60} />
           </Campo>
-          <Campo etiqueta="Tipo de cuenta">
-            <select value={tr.tipo_cuenta} onChange={(e) => setTr({ ...tr, tipo_cuenta: e.target.value })}>
-              <option value="">Selecciona…</option>
-              {TIPOS_CUENTA.map((x) => (
-                <option key={x}>{x}</option>
-              ))}
-            </select>
-          </Campo>
+          <div className="campo">
+            <span>Tipo de cuenta</span>
+            <Selector etiqueta="Tipo de cuenta" valor={tr.tipo_cuenta} onCambio={(v) => setTr({ ...tr, tipo_cuenta: v })} opciones={TIPOS_CUENTA.map((x) => ({ valor: x, etiqueta: x }))} />
+          </div>
           <Campo etiqueta="Número de cuenta">
             <input inputMode="numeric" value={tr.numero_cuenta} onChange={(e) => setTr({ ...tr, numero_cuenta: e.target.value })} maxLength={30} />
           </Campo>
@@ -236,9 +235,9 @@ export default function Ajustes() {
             <input type="email" inputMode="email" value={tr.correo} onChange={(e) => setTr({ ...tr, correo: e.target.value })} maxLength={80} />
           </Campo>
         </Ficha>
-      </Seccion>
+      </Cuadro>
 
-      <Seccion
+      <Cuadro
         titulo="Horario y reservas"
         resumen={`${hm(a.hora_apertura)} a ${hm(a.hora_cierre)} · cada ${a.paso_min} min`}
         icono="clock"
@@ -266,13 +265,15 @@ export default function Ajustes() {
               <input type="time" value={hor.cierre} onChange={(e) => setHor({ ...hor, cierre: e.target.value })} required />
             </Campo>
           </div>
-          <Campo etiqueta="Intervalo entre horas">
-            <select value={hor.paso} onChange={(e) => setHor({ ...hor, paso: Number(e.target.value) })}>
-              <option value={15}>Cada 15 minutos</option>
-              <option value={30}>Cada 30 minutos</option>
-              <option value={60}>Cada 60 minutos</option>
-            </select>
-          </Campo>
+          <div className="campo">
+            <span>Intervalo entre horas</span>
+            <Selector
+              etiqueta="Intervalo entre horas"
+              valor={String(hor.paso)}
+              onCambio={(v) => setHor({ ...hor, paso: Number(v) })}
+              opciones={[15, 30, 60].map((n) => ({ valor: String(n), etiqueta: `Cada ${n} minutos` }))}
+            />
+          </div>
           <Campo etiqueta="Días de anticipación" ayuda="Hasta cuántos días adelante se puede reservar.">
             <input type="number" min={1} max={90} value={hor.dias} onChange={(e) => setHor({ ...hor, dias: num(e.target.value, 1, 90, hor.dias) })} />
           </Campo>
@@ -283,9 +284,9 @@ export default function Ajustes() {
             <input type="number" min={0} max={60} value={hor.tol} onChange={(e) => setHor({ ...hor, tol: num(e.target.value, 0, 60, hor.tol) })} />
           </Campo>
         </Ficha>
-      </Seccion>
+      </Cuadro>
 
-      <Seccion titulo="Avisos en este celular" resumen={barberia?.plan === "basico" ? "Disponible en el plan Pro" : "Entérate cuando llega un comprobante"} icono="phone" abierta={abierta === "avisos"} onToggle={() => alternar("avisos")}>
+      <Cuadro titulo="Avisos en este celular" resumen={barberia?.plan === "basico" ? "Disponible en el plan Pro" : "Entérate cuando llega un comprobante"} icono="phone" abierta={abierta === "avisos"} onToggle={() => alternar("avisos")}>
         {barberia?.plan === "basico" ? (
           <>
             <p className="suave" style={{ margin: 0 }}>
@@ -298,7 +299,9 @@ export default function Ajustes() {
         ) : (
           <AvisosPush />
         )}
-      </Seccion>
+      </Cuadro>
+
+      </div>
 
       <div style={{ marginTop: 18 }}>
         <CambiarClave />

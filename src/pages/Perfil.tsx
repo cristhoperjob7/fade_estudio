@@ -7,6 +7,7 @@ import { useAuth } from "../lib/auth";
 import Ficha from "../components/Ficha";
 import { formatearTelefono } from "../lib/whatsapp";
 import Icon from "../components/Icon";
+import Pestanitas from "../components/Pestanitas";
 import { useToast } from "../components/Toast";
 import { guardarDatos, quitarFoto, subirFoto, useMiPerfil } from "../lib/perfil";
 type Pestana = "datos" | "clave" | "avisos";
@@ -109,20 +110,18 @@ export default function Perfil() {
         </div>
       </div>
 
-      <div className="pestanitas" role="tablist" aria-label="Mi perfil">
-        <button role="tab" aria-selected={tab === "datos"} className={tab === "datos" ? "on" : ""} onClick={() => setTab("datos")}>
-          Mis datos
-        </button>
-        <button role="tab" aria-selected={tab === "clave"} className={tab === "clave" ? "on" : ""} onClick={() => setTab("clave")}>
-          Cambiar mi clave
-        </button>
-        {rojo && (
-          <button role="tab" aria-selected={tab === "avisos"} className={tab === "avisos" ? "on" : ""} onClick={() => setTab("avisos")}>
-            Avisos
-          </button>
-        )}
-      </div>
+      <Pestanitas
+        etiqueta="Mi perfil"
+        valor={tab}
+        onCambio={setTab}
+        opciones={[
+          { valor: "datos", etiqueta: "Mis datos" },
+          { valor: "clave", etiqueta: "Cambiar mi clave" },
+          ...(rojo ? [{ valor: "avisos" as Pestana, etiqueta: "Avisos" }] : []),
+        ]}
+      />
 
+      <div key={tab} className="pest-panel">
       {tab === "datos" ? (
         <Ficha
           filas={[
@@ -165,6 +164,7 @@ export default function Perfil() {
       ) : (
         <FormularioClave conTitulo={false} onListo={() => setTab("datos")} />
       )}
+      </div>
     </>
   );
 }
