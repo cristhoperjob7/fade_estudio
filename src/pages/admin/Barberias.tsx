@@ -12,6 +12,7 @@ import { DIAS_PRUEBA, usePlanes } from "../../lib/planes";
 import type { Solicitud } from "./Solicitudes";
 import { useToast } from "../../components/Toast";
 import Hoja from "../../components/Hoja";
+import Seccion from "../../components/Seccion";
 import Icon from "../../components/Icon";
 
 
@@ -303,51 +304,66 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
     void cargarPagos();
   }, [cargarPagos]);
 
+  const [abierta, setAbierta] = useState<"pago" | "plan" | "historial" | "dueno" | "">("pago");
+  const [confirmar, setConfirmar] = useState(false);
+  const alternar = (k: typeof abierta) => setAbierta(abierta === k ? "" : k);
+  const suspendida = b.estado === "suspendida";
+
+  async function suspender() {
+    if (!confirmar) return setConfirmar(true);
+    setConfirmar(false);
+    const { data, error: err } = await supabase
+      .from("barberias")
+      .update({ estado: suspendida ? "activa" : "suspendida" })
+      .eq("id", b.id)
+      .select("id");
+    if (err || !data || data.length === 0) return avisar("No se pudo cambiar el estado", "error");
+    avisar(suspendida ? "Barbería reactivada" : "Barbería suspendida");
+    onCambio();
+  }
+
   return (
-    <Hoja titulo={b.nombre} onCerrar={onCerrar}>
-      <div className="datos">
-        <div>
-          <span>Estado</span>
-          <b>
-            <span className={`chip sus-${e.tono}`}>{e.texto}</span>
-          </b>
+    <Hoja titulo="Barbería" onCerrar={onCerrar}>
+      <div className="bar-resumen">
+        <div className="bar-ini" aria-hidden="true">
+          {b.nombre.trim().slice(0, 2).toUpperCase()}
         </div>
-        <div>
-          <span>Vence</span>
-          <b>{b.vence_el ? fechaMes(b.vence_el) : "—"}</b>
+        <div className="bar-txt">
+          <b>{b.nombre}</b>
+          <small>
+            {PLAN_LABEL[b.plan]} · {b.dueno_nombre ?? "sin dueño"}
+          </small>
         </div>
-        <div>
-          <span>Dueño</span>
-          <b>{b.dueno_nombre ?? "—"}</b>
-        </div>
-        <div>
-          <span>Correo</span>
-          <b>{b.dueno_correo ?? "—"}</b>
-        </div>
-        <div>
-          <span>Página</span>
-          <b>/b/{b.slug}</b>
-        </div>
+        <span className={`chip sus-${e.tono}`}>{e.texto}</span>
       </div>
-      <button
-        className="btn btn-borde btn-chico"
-        style={{ marginTop: 10 }}
-        onClick={() =>
-          navigator.clipboard
-            ?.writeText(enlace)
-            .then(() => avisar("Enlace copiado"))
-            .catch(() => avisar("No se pudo copiar", "error"))
-        }
-      >
-        Copiar enlace de reservas
-      </button>
 
-      <RegistrarPago b={b} onListo={() => { onCambio(); void cargarPagos(); }} />
-      <Editar b={b} onListo={onCambio} />
-      <ClaveDueno b={b} />
+      <div className="bar-rapidas">
+        <button className="btn btn-primario btn-chico" onClick={() => setAbierta("pago")}>
+          Registrar pago
+        </button>
+        <button
+          className="btn btn-borde btn-chico"
+          onClick={() =>
+            navigator.clipboard
+              ?.writeText(enlace)
+              .then(() => avisar("Enlace copiado"))
+              .catch(() => avisar("No se pudo copiar", "error"))
+          }
+        >
+          Copiar enlace
+        </button>
+        <button className="btn btn-borde btn-chico" onClick={() => void suspender()} onBlur={() => setConfirmar(false)}>
+          {confirmar ? "¿Seguro?" : suspendida ? "Reactivar" : "Suspender"}
+        </button>
+      </div>
 
-      <div className="tarjeta" style={{ marginTop: 16 }}>
-        <h2>Pagos</h2>
+      <Seccion titulo="Registrar pago" resumen={b.vence_el ? `Vence el ${fechaMes(b.vence_el)}` : "Sin vencimiento"} icono="receipt" abierta={abierta === "pago"} onToggle={() => alternar("pago")}>
+        <RegistrarPago b={b} onListo={() => { onCambio(); void cargarPagos(); }} />
+      </Seccion>
+      <Seccion titulo="Plan y vencimiento" resumen={`${PLAN_LABEL[b.plan]} · ${clp(b.precio_mensual)}/mes`} icono="tag" abierta={abierta === "plan"} onToggle={() => alternar("plan")}>
+        <Editar b={b} onListo={onCambio} />
+      </Seccion>
+      <Seccion titulo="Historial de pagos" resumen={pagos ? `${pagos.length} ${pagos.length === 1 ? "pago" : "pagos"}` : ""} icono="clock" abierta={abierta === "historial"} onToggle={() => alternar("historial")}>
         {pagos && pagos.length === 0 && <p className="suave">Todavía no hay pagos registrados.</p>}
         <ul className="lista">
           {(pagos ?? []).map((p) => (
@@ -363,7 +379,24 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
             </li>
           ))}
         </ul>
-      </div>
+      </Seccion>
+      <Seccion titulo="Datos y clave del dueño" resumen={b.dueno_correo ?? ""} icono="user" abierta={abierta === "dueno"} onToggle={() => alternar("dueno")}>
+        <div className="datos">
+          <div>
+            <span>Dueño</span>
+            <b>{b.dueno_nombre ?? "—"}</b>
+          </div>
+          <div>
+            <span>Correo</span>
+            <b>{b.dueno_correo ?? "—"}</b>
+          </div>
+          <div>
+            <span>Página</span>
+            <b>/b/{b.slug}</b>
+          </div>
+        </div>
+        <ClaveDueno b={b} />
+      </Seccion>
     </Hoja>
   );
 }
@@ -395,8 +428,7 @@ function RegistrarPago({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }
   };
 
   return (
-    <form className="tarjeta" style={{ marginTop: 16 }} onSubmit={registrar}>
-      <h2>Registrar pago</h2>
+    <form className="form-hoja" onSubmit={registrar}>
       <div className="fila-dos">
         <label className="campo">
           <span>Monto (CLP)</span>
@@ -470,8 +502,7 @@ function Editar({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
   };
 
   return (
-    <form className="tarjeta" style={{ marginTop: 16 }} onSubmit={guardar}>
-      <h2>Plan y vencimiento</h2>
+    <form className="form-hoja" onSubmit={guardar}>
       <label className="campo">
         <span>Nombre (para ti)</span>
         <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} required />
@@ -541,8 +572,8 @@ function ClaveDueno({ b }: { b: BarberiaAdmin }) {
   };
 
   return (
-    <div className="tarjeta" style={{ marginTop: 16 }}>
-      <h2>Clave del dueño</h2>
+    <div className="form-hoja" style={{ marginTop: 16 }}>
+      <h3 style={{ fontSize: 15 }}>Clave del dueño</h3>
       <label className="campo">
         <span>Clave nueva</span>
         <input value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="off" placeholder="Mínimo 8 caracteres" />

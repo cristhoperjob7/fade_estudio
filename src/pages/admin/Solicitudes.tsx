@@ -52,6 +52,7 @@ export default function Solicitudes() {
     if (err) return setError("No pudimos cargar las solicitudes. Revisa que paso05-planes.sql esté ejecutado.");
     setError("");
     setLista((data ?? []) as Solicitud[]);
+    window.dispatchEvent(new Event("fs-solicitudes")); // actualiza el contador del menú
   }, []);
   useEffect(() => {
     void cargar();

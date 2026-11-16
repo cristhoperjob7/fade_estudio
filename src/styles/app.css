@@ -560,3 +560,12 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
 .tp-cab b.actual { color: var(--oro); }
 .tp-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
 @media (max-width: 420px) { .tp-fila { font-size: 12.5px; padding: 12px 8px; } }
+
+/* Ventana de barbería (superadmin) */
+.bar-resumen { display: flex; align-items: center; gap: 12px; }
+.bar-ini { width: 46px; height: 46px; border-radius: 12px; background: var(--s2); border: 1px solid var(--line); display: grid; place-items: center; font-weight: 700; flex: none; }
+.bar-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.bar-txt b { font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-txt small { color: var(--mut); font-size: 13.5px; }
+.bar-rapidas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 16px; }
+.bar-rapidas .btn { padding: 0 8px; }

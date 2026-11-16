@@ -21,6 +21,7 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
   const { pathname } = useLocation();
   const [barberia, setBarberia] = useState("");
   const [pendientes, setPendientes] = useState(0);
+  const [nuevas, setNuevas] = useState(0);
   const [abierto, setAbierto] = useState(false);
   const botonMenu = useRef<HTMLButtonElement>(null);
   const lateral = useRef<HTMLElement>(null);
@@ -53,6 +54,27 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
       void supabase.removeChannel(canal);
     };
   }, [perfil?.rol]);
+
+  // Superadmin: solicitudes nuevas (planes y cambios de plan). Se revisa cada 30 s y al volver a la pestaña.
+  useEffect(() => {
+    if (!esAdmin || perfil) return;
+    let vivo = true;
+    const contar = () =>
+      supabase.rpc("admin_solicitudes").then(({ data }) => {
+        if (vivo) setNuevas(((data ?? []) as { estado: string }[]).filter((x) => x.estado === "nueva").length);
+      });
+    void contar();
+    const id = window.setInterval(() => void contar(), 30_000);
+    const alVolver = () => document.visibilityState === "visible" && void contar();
+    document.addEventListener("visibilitychange", alVolver);
+    window.addEventListener("fs-solicitudes", alVolver);
+    return () => {
+      vivo = false;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", alVolver);
+      window.removeEventListener("fs-solicitudes", alVolver);
+    };
+  }, [esAdmin, perfil]);
 
   const cerrar = useCallback(() => {
     setAbierto(false);
@@ -96,6 +118,11 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
     <NavLink key={p.ruta} to={p.ruta} className={({ isActive }) => `lat-item${isActive ? " on" : ""}`}>
       <Icon nombre={p.icono} size={21} />
       <span>{p.texto}</span>
+      {p.ruta === "/admin/solicitudes" && nuevas > 0 && (
+        <em className="lat-insignia" aria-label={`${nuevas} nuevas`}>
+          {nuevas}
+        </em>
+      )}
       {p.ruta === "/panel/reservas" && pendientes > 0 && (
         <em className="lat-insignia" aria-label={`${pendientes} por revisar`}>
           {pendientes}
