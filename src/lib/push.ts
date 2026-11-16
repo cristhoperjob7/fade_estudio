@@ -51,16 +51,31 @@ export async function activarPush(): Promise<void> {
     (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64ABuffer(CLAVE_PUBLICA) }));
   const j = sub.toJSON();
   if (!j.endpoint || !j.keys?.p256dh || !j.keys?.auth) throw new Error("Este navegador no entregó los datos de los avisos.");
-  const { error } = await supabase
-    .from("push_suscripciones")
-    .upsert(
-      { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, agente: navigator.userAgent.slice(0, 200) },
-      { onConflict: "endpoint" },
-    );
+  const { error } = await supabase.rpc("push_registrar", {
+    p_endpoint: j.endpoint,
+    p_p256dh: j.keys.p256dh,
+    p_auth: j.keys.auth,
+    p_agente: navigator.userAgent.slice(0, 200),
+  });
   if (error) {
     await sub.unsubscribe().catch(() => undefined);
-    throw new Error("No pudimos guardar tu celular. ¿Ejecutaste paso04-push.sql?");
+    throw new Error("No pudimos guardar tu celular. ¿Ejecutaste paso14-push-mismo-celular.sql?");
   }
+}
+
+/** Si este celular ya tiene avisos, los deja a nombre de la cuenta que está abierta (sirve al cambiar de cuenta). */
+export async function vincularPush(): Promise<void> {
+  if (Notification.permission !== "granted") return;
+  const reg = await registro();
+  const sub = await reg.pushManager.getSubscription();
+  const j = sub?.toJSON();
+  if (!j?.endpoint || !j.keys?.p256dh || !j.keys?.auth) return;
+  await supabase.rpc("push_registrar", {
+    p_endpoint: j.endpoint,
+    p_p256dh: j.keys.p256dh,
+    p_auth: j.keys.auth,
+    p_agente: navigator.userAgent.slice(0, 200),
+  });
 }
 
 export async function desactivarPush(): Promise<void> {

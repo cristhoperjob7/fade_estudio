@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { activarPush, desactivarPush, estadoPush, probarPush } from "../lib/push";
+import { activarPush, desactivarPush, estadoPush, probarPush, vincularPush } from "../lib/push";
 import type { EstadoPush } from "../lib/push";
 import { useToast } from "./Toast";
 
@@ -21,7 +21,10 @@ export default function AvisosPush({ para = "dueno" }: { para?: "dueno" | "admin
 
   const leer = useCallback(() => {
     estadoPush()
-      .then(setEstado)
+      .then(async (e) => {
+        if (e === "activo") await vincularPush().catch(() => undefined);
+        setEstado(e);
+      })
       .catch(() => setEstado("no-soportado"));
   }, []);
   useEffect(leer, [leer]);
