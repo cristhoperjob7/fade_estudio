@@ -17,6 +17,7 @@ import PlanDueno from "./pages/dueno/Plan";
 import AgendaGeneral from "./pages/dueno/AgendaGeneral";
 import Equipo from "./pages/dueno/Equipo";
 import Perfil from "./pages/Perfil";
+import Chat from "./pages/Chat";
 import Landing from "./pages/Landing";
 import Vencida from "./pages/Vencida";
 import Resumen from "./pages/admin/Resumen";
@@ -33,6 +34,7 @@ const PESTANAS_DUENO: Pestana[] = [
   { ruta: "/panel/reservas", texto: "Reservas", icono: "receipt" },
   { ruta: "/panel/historial", texto: "Historial", icono: "clock" },
   { ruta: "/panel/equipo", texto: "Equipo", icono: "users" },
+  { ruta: "/panel/chat", texto: "Chat", icono: "chat" },
   { ruta: "/panel/plan", texto: "Mi plan", icono: "tag" },
   { ruta: "/panel/ajustes", texto: "Ajustes", icono: "settings" },
   { ruta: "/panel/perfil", texto: "Mi perfil", icono: "user", abajo: true },
@@ -43,10 +45,12 @@ const PESTANAS_ADMIN: Pestana[] = [
   { ruta: "/admin/solicitudes", texto: "Solicitudes", icono: "inbox" },
   { ruta: "/admin/planes", texto: "Planes", icono: "tag" },
   { ruta: "/admin/descuentos", texto: "Descuentos", icono: "percent" },
+  { ruta: "/admin/chat", texto: "Chat", icono: "chat" },
   { ruta: "/admin/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
 const PESTANAS_BARBERO: Pestana[] = [
   { ruta: "/panel/agenda", texto: "Agenda", icono: "cal" },
+  { ruta: "/panel/chat", texto: "Chat", icono: "chat" },
   { ruta: "/panel/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
 
@@ -115,6 +119,7 @@ export default function App() {
           <Route path="solicitudes" element={<Solicitudes />} />
           <Route path="planes" element={<Planes />} />
           <Route path="descuentos" element={<Descuentos />} />
+          <Route path="chat" element={<Chat />} />
           <Route path="perfil" element={<Perfil />} />
         </Route>
       </Route>
@@ -124,6 +129,7 @@ export default function App() {
 
         <Route element={<ShellPanel />}>
           <Route path="perfil" element={<Perfil />} />
+          <Route path="chat" element={<Chat />} />
 
           <Route element={<RequiereRol rol="dueno" />}>
             <Route path="inicio" element={<Inicio />} />
