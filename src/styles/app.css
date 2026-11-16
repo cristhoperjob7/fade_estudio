@@ -611,3 +611,86 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
 .mp-colores button.on { border-color: var(--tx); box-shadow: 0 0 0 2px var(--bg); }
 .mp-colores input[type="color"] { width: 38px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; }
 .campo textarea { width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--s1); color: inherit; font: inherit; resize: vertical; }
+
+/* Mi plan */
+.mi-plan { border: 1px solid var(--line); border-radius: 18px; padding: 18px; background: var(--s1); display: grid; gap: 8px; margin: 14px 0; }
+.mi-plan-pro { border-color: rgba(224, 178, 74, .55); background: linear-gradient(135deg, rgba(224, 178, 74, .10), var(--s1) 60%); }
+.mi-plan-vip { border-color: rgba(143, 227, 255, .55); background: linear-gradient(135deg, rgba(143, 227, 255, .10), var(--s1) 60%); }
+.mi-plan-cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mi-plan-nombre { font: 700 44px/1 "Big Shoulders", Impact, sans-serif; text-transform: uppercase; letter-spacing: .02em; color: var(--tx); }
+.mi-plan-pro .mi-plan-nombre { color: var(--oro); }
+.mi-plan-vip .mi-plan-nombre { color: #8fe3ff; }
+.mi-plan-barra { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.mi-plan-barra i { display: block; height: 100%; border-radius: 99px; background: var(--ok, #35c48a); }
+.mi-plan-pro .mi-plan-barra i { background: var(--oro); }
+.mi-plan-vip .mi-plan-barra i { background: #8fe3ff; }
+.mi-plan-lista { display: grid; gap: 0; margin: 8px 0 0; padding: 0; list-style: none; }
+.mi-plan-lista li { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.mi-plan-lista li:last-child { border-bottom: 0; }
+.mi-plan-lista li::before { content: "✓"; color: #35c48a; font-weight: 700; }
+.mi-plan-mas { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; border: 1px solid rgba(143, 227, 255, .45); border-radius: 16px; padding: 14px 16px; margin-top: 12px; }
+.mi-plan-mas b { color: #8fe3ff; }
+
+/* Solicitudes */
+.sol-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sol-tabs { display: flex; gap: 8px; margin: 14px 0; overflow-x: auto; }
+.sol-tabs button { padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); color: var(--mut); white-space: nowrap; font-size: 13.5px; }
+.sol-tabs button.on { background: rgba(255, 59, 59, .14); border-color: rgba(255, 59, 59, .5); color: #ff9a9a; font-weight: 700; }
+.sol-quien { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pasos { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 4px; }
+.pasos li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 10px 0; opacity: .55; }
+.pasos li.act, .pasos li.hecho { opacity: 1; }
+.pasos .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); color: var(--mut); font-weight: 700; font-size: 13px; }
+.pasos li.act .n { background: var(--blue); border-color: var(--blue); color: #fff; }
+.pasos li.hecho .n { background: rgba(53, 196, 138, .15); border-color: #35c48a; color: #35c48a; }
+.pasos p { margin: 2px 0 8px; }
+.btn-whatsapp { background: rgba(37, 211, 102, .14); border: 1px solid rgba(37, 211, 102, .55); color: #5be28a; }
+.sol-pie { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
+.sol-descartar { color: #ff8a8a; }
+.chip.sus-ok-suave { color: #6ea0ff; border-color: rgba(37, 99, 235, .5); background: rgba(37, 99, 235, .14); }
+
+/* Barberías: lista con búsqueda y comunas */
+.barb-buscar { display: flex; align-items: center; gap: 10px; padding: 0 14px; min-height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--s1); color: var(--mut); margin-top: 12px; }
+.barb-buscar input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--tx); font: inherit; }
+.barb-sel { padding: 8px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--s1); color: var(--mut); font-size: 13.5px; }
+.barb-grupo { margin-top: 14px; }
+.barb-comuna { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); margin: 0 2px 4px; }
+.barb-comuna small { font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+/* Ficha de barbería (ventana ancha) */
+@media (min-width: 900px) { .hoja.ancha { max-width: 1020px; } }
+.ficha { display: grid; gap: 22px; }
+@media (min-width: 900px) { .ficha { grid-template-columns: 320px 1fr; gap: 28px; } .ficha-izq { border-right: 1px solid var(--line); padding-right: 24px; } }
+.ficha-izq, .ficha-der { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.ficha-id { display: flex; gap: 12px; align-items: center; }
+.ficha-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip.plan-pro { color: var(--oro); border-color: rgba(224, 178, 74, .5); }
+.chip.plan-vip { color: #8fe3ff; border-color: rgba(143, 227, 255, .5); }
+.ficha-lab { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); margin: 10px 0 0; }
+.ficha-fila { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ficha-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.ficha-kpis div { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; background: var(--bg); }
+.ficha-kpis span { font-size: 12px; color: var(--mut); }
+.ficha-kpis b { font: 700 26px/1 "Big Shoulders", Impact, sans-serif; }
+.ficha-contacto { list-style: none; margin: 0; padding: 0; display: grid; }
+.ficha-contacto li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; overflow-wrap: anywhere; }
+.ficha-contacto a { color: #5be28a; font-weight: 700; flex: none; }
+.ficha-cobro { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+@media (max-width: 560px) { .ficha-cobro { grid-template-columns: 1fr; } }
+.ficha-cobro .btn { display: grid; gap: 2px; padding: 10px 14px; min-height: 58px; align-content: center; text-align: center; }
+.ficha-cobro .btn small { font-weight: 400; font-size: 11.5px; opacity: .8; }
+.ficha-planes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 560px) { .ficha-planes { grid-template-columns: 1fr; } }
+.ficha-plan { text-align: left; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; background: var(--bg); display: grid; gap: 2px; color: inherit; cursor: pointer; }
+.ficha-plan b { font: 700 24px/1.1 "Big Shoulders", Impact, sans-serif; }
+.ficha-plan small { color: var(--mut); font-size: 12px; }
+.ficha-plan-n { font-weight: 700; font-size: 13.5px; }
+.ficha-plan.on { border-color: var(--blue); background: rgba(37, 99, 235, .10); }
+.ficha-plan.plan-pro.on { border-color: var(--oro); background: rgba(224, 178, 74, .10); }
+.ficha-plan.plan-vip.on { border-color: #8fe3ff; background: rgba(143, 227, 255, .10); }
+.ficha-mas { border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; }
+.ficha-mas summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
+.ficha-mas[open] { padding-bottom: 14px; }
+.ficha-pie { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ficha-pie-der { display: flex; gap: 8px; }
+.btn-peligro { background: rgba(255, 59, 59, .12); border: 1px solid rgba(255, 59, 59, .45); color: #ff8a8a; }

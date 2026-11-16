@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import Icon from "./Icon";
 
 /** Panel que sube desde abajo (en celular) o aparece al centro (en PC). */
-export default function Hoja({ titulo, onCerrar, children }: { titulo: string; onCerrar: () => void; children: ReactNode }) {
+export default function Hoja({ titulo, onCerrar, children, ancha = false }: { titulo: string; onCerrar: () => void; children: ReactNode; ancha?: boolean }) {
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => e.key === "Escape" && onCerrar();
     window.addEventListener("keydown", tecla);
@@ -21,7 +21,7 @@ export default function Hoja({ titulo, onCerrar, children }: { titulo: string; o
         if (e.target === e.currentTarget && e.currentTarget.dataset.ini === "1") onCerrar();
       }}
     >
-      <div className="hoja" role="dialog" aria-modal="true" aria-label={titulo}>
+      <div className={`hoja${ancha ? " ancha" : ""}`} role="dialog" aria-modal="true" aria-label={titulo}>
         <div className="hoja-cab">
           <h2>{titulo}</h2>
           <button className="icono-btn" aria-label="Cerrar" onClick={onCerrar}>

@@ -1,20 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { clp } from "../../lib/dinero";
-import { aSlug, estadoSuscripcion, fechaMes } from "../../lib/admin";
+import { aSlug, diasHasta, estadoSuscripcion, fechaMes } from "../../lib/admin";
 import { claveAleatoria, llamarFuncion } from "../../lib/equipo";
 import { hoyChile } from "../../lib/fecha";
+import { enlaceWhatsapp, formatearTelefono } from "../../lib/whatsapp";
 import type { BarberiaAdmin, PagoSuscripcion, Plan } from "../../lib/types";
 import { PLAN_LABEL } from "../../lib/types";
 import { DIAS_PRUEBA, usePlanes } from "../../lib/planes";
 import type { Solicitud } from "./Solicitudes";
 import { useToast } from "../../components/Toast";
 import Hoja from "../../components/Hoja";
-import Seccion from "../../components/Seccion";
 import Icon from "../../components/Icon";
+import SelectorComuna from "../../components/SelectorComuna";
 
+type Filtro = "todas" | "recientes" | "vencer";
 
 export default function Barberias() {
   const [q, setQ] = useSearchParams();
@@ -22,6 +24,10 @@ export default function Barberias() {
   const [error, setError] = useState("");
   const [nueva, setNueva] = useState(false);
   const [desdeSolicitud, setDesdeSolicitud] = useState<Solicitud | null>(null);
+  const [buscar, setBuscar] = useState("");
+  const [filtro, setFiltro] = useState<Filtro>("todas");
+  const [fComuna, setFComuna] = useState("");
+  const [fPlan, setFPlan] = useState("");
   const ubicacion = useLocation();
   const nav = useNavigate();
   useEffect(() => {
@@ -34,7 +40,7 @@ export default function Barberias() {
 
   const cargar = useCallback(async () => {
     const { data, error: err } = await supabase.rpc("admin_barberias");
-    if (err) return setError("No pudimos cargar las barberías. Revisa que paso02-superadmin.sql esté ejecutado.");
+    if (err) return setError("No pudimos cargar las barberías. Revisa que paso17-ubicacion-solicitudes.sql esté ejecutado.");
     setError("");
     setLista((data ?? []) as BarberiaAdmin[]);
   }, []);
@@ -45,10 +51,35 @@ export default function Barberias() {
   const abierta = lista?.find((b) => b.id === q.get("id")) ?? null;
   const cerrar = () => setQ({}, { replace: true });
 
+  const comunas = useMemo(() => [...new Set((lista ?? []).map((b) => b.comuna).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es")), [lista]);
+
+  const grupos = useMemo(() => {
+    const t = buscar.trim().toLowerCase();
+    const hoy = hoyChile();
+    const f = (lista ?? []).filter((b) => {
+      if (t && ![b.nombre, b.comuna, b.region, b.dueno_nombre ?? "", b.slug].some((x) => x.toLowerCase().includes(t))) return false;
+      if (fComuna && b.comuna !== fComuna) return false;
+      if (fPlan && b.plan !== fPlan) return false;
+      if (filtro === "recientes" && diasHasta(hoy, b.creada_en.slice(0, 10)) > 30) return false;
+      if (filtro === "vencer" && !(b.vence_el && diasHasta(b.vence_el) <= 7)) return false;
+      return true;
+    });
+    const mapa = new Map<string, BarberiaAdmin[]>();
+    for (const b of f) mapa.set(b.comuna || "", [...(mapa.get(b.comuna || "") ?? []), b]);
+    return [...mapa.entries()].sort((a, b) => Number(a[0] === "") - Number(b[0] === "") || b[1].length - a[1].length || a[0].localeCompare(b[0], "es"));
+  }, [lista, buscar, filtro, fComuna, fPlan]);
+
+  const total = lista?.length ?? 0;
+  const porVencer = (lista ?? []).filter((b) => b.vence_el && diasHasta(b.vence_el) <= 7).length;
+
   return (
     <>
-      <h1 className="titulo">Barberías</h1>
-      <p className="suave">Tus clientes, su plan y hasta cuándo pagaron.</p>
+      <div className="sol-cab">
+        <h1 className="titulo">Barberías</h1>
+        <span className="suave chico">
+          {total} {total === 1 ? "barbería" : "barberías"} · {comunas.length} {comunas.length === 1 ? "comuna" : "comunas"}
+        </span>
+      </div>
 
       {error && (
         <p className="aviso error" role="alert">
@@ -56,25 +87,62 @@ export default function Barberias() {
         </p>
       )}
 
-      <ul className="lista">
-        {(lista ?? []).map((b) => {
-          const e = estadoSuscripcion(b);
-          return (
-            <li key={b.id}>
-              <button className="fila fila-btn" onClick={() => setQ({ id: b.id }, { replace: true })}>
-                <span className="fila-cuerpo">
-                  <b>{b.nombre}</b>
-                  <small>
-                    {PLAN_LABEL[b.plan]} · {clp(b.precio_mensual)}/mes · {b.citas_30d} {b.citas_30d === 1 ? "cita" : "citas"} en 30 días
-                  </small>
-                </span>
-                <span className={`chip sus-${e.tono}`}>{e.texto}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      {lista && lista.length === 0 && <div className="vacio">Aún no tienes barberías. Crea la primera.</div>}
+      <label className="barb-buscar">
+        <Icon nombre="search" size={18} />
+        <input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar por nombre, comuna o dueño" aria-label="Buscar barbería" />
+      </label>
+      <div className="sol-tabs" role="group" aria-label="Filtros">
+        {([["todas", "Todas"], ["recientes", "Recientes"], ["vencer", `Por vencer · ${porVencer}`]] as [Filtro, string][]).map(([v, t]) => (
+          <button key={v} className={filtro === v ? "on" : ""} aria-pressed={filtro === v} onClick={() => setFiltro(v)}>
+            {t}
+          </button>
+        ))}
+        <select aria-label="Comuna" value={fComuna} onChange={(e) => setFComuna(e.target.value)} className="barb-sel">
+          <option value="">Comuna</option>
+          {comunas.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <select aria-label="Plan" value={fPlan} onChange={(e) => setFPlan(e.target.value)} className="barb-sel">
+          <option value="">Plan</option>
+          <option value="basico">Básico</option>
+          <option value="pro">Pro</option>
+          <option value="vip">VIP</option>
+        </select>
+      </div>
+
+      {grupos.map(([comuna, items]) => (
+        <section key={comuna || "sin"} className="barb-grupo">
+          <h2 className="barb-comuna">
+            <span>{comuna || "Sin comuna"}</span>
+            <small>
+              {items.length} {items.length === 1 ? "barbería" : "barberías"}
+            </small>
+          </h2>
+          <ul className="lista">
+            {items.map((b) => {
+              const e = estadoSuscripcion(b);
+              return (
+                <li key={b.id}>
+                  <button className="fila fila-btn" onClick={() => setQ({ id: b.id }, { replace: true })}>
+                    <span className="fila-cuerpo">
+                      <b>{b.nombre}</b>
+                      <small>
+                        {PLAN_LABEL[b.plan]} · {b.citas_30d} {b.citas_30d === 1 ? "cita" : "citas"} en 30 días
+                        {!b.comuna ? " · falta la comuna" : ""}
+                      </small>
+                    </span>
+                    <span className={`chip sus-${e.tono}`}>{e.texto}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+      {lista && grupos.length === 0 && <div className="vacio">{total === 0 ? "Aún no tienes barberías. Crea la primera." : "Ninguna barbería coincide con la búsqueda."}</div>}
 
       <button className="btn btn-primario btn-ancho" style={{ marginTop: 18 }} onClick={() => setNueva(true)}>
         <Icon nombre="shop" size={20} />
@@ -113,6 +181,8 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
   const [prueba, setPrueba] = useState(inicial && inicial.ciclo !== "prueba" ? "0" : String(DIAS_PRUEBA));
   const [dueno, setDueno] = useState(inicial?.contacto ?? "");
   const [correo, setCorreo] = useState(inicial?.correo ?? "");
+  const [region, setRegion] = useState("");
+  const [comuna, setComuna] = useState("");
   const [clave, setClave] = useState(claveAleatoria());
   const [error, setError] = useState("");
   const [ocupado, setOcupado] = useState(false);
@@ -142,6 +212,7 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
     });
     setOcupado(false);
     if (motivo) return setError(motivo);
+    if (region && comuna) await supabase.from("barberias").update({ region, comuna }).eq("slug", slug);
     if (inicial) await supabase.rpc("admin_estado_solicitud", { p_id: inicial.id, p_estado: "creada" });
     if (inicial?.descuento_codigo) {
       const { data: nueva } = await supabase.from("barberias").select("id").eq("slug", slug).maybeSingle();
@@ -240,6 +311,7 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
           <input type="number" inputMode="numeric" min={0} max={365} value={prueba} onChange={(e) => setPrueba(e.target.value)} />
           <small>Vence el {fechaMes(vence)}. Después se bloquea hasta que registres un pago.</small>
         </label>
+        <SelectorComuna region={region} comuna={comuna} onCambio={(r, c) => { setRegion(r); setComuna(c); }} />
         <div className="sep" />
         <label className="campo">
           <span>Nombre del dueño</span>
@@ -271,11 +343,45 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
 
 /* -------------------------------------------------------------- detalle */
 
+const PLANES_ORDEN: Plan[] = ["basico", "pro", "vip"];
+const DESC_PLAN: Record<Plan, string> = { basico: "1 barbero adicional", pro: "Página propia y avisos", vip: "Página a medida" };
+
+/** Fecha en que quedaría pagada la barbería si se suman N meses hoy. */
+function vencimientoCon(b: BarberiaAdmin, meses: number): string {
+  const hoy = hoyChile();
+  const base = !b.vence_el || b.vence_el < hoy ? hoy : b.vence_el;
+  const d = new Date(`${base}T12:00:00Z`);
+  const dia = d.getUTCDate();
+  d.setUTCMonth(d.getUTCMonth() + meses);
+  if (d.getUTCDate() !== dia) d.setUTCDate(0); // 31 ene + 1 mes -> 28 feb
+  return d.toISOString().slice(0, 10);
+}
+
+/** Ficha de la barbería: quién es y cómo está a la izquierda; cobrar, plan y datos a la derecha. */
 function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => void; onCambio: () => void }) {
   const avisar = useToast();
+  const planes = usePlanes();
   const e = estadoSuscripcion(b);
-  const [pagos, setPagos] = useState<PagoSuscripcion[] | null>(null);
   const enlace = `${window.location.origin}/b/${b.slug}`;
+  const [pagos, setPagos] = useState<PagoSuscripcion[] | null>(null);
+  const [plan, setPlan] = useState<Plan>(b.plan);
+  const [region, setRegion] = useState(b.region);
+  const [comuna, setComuna] = useState(b.comuna);
+  const [notas, setNotas] = useState(b.notas);
+  const [gracia, setGracia] = useState(String(b.gracia_dias));
+  const [vence, setVence] = useState(b.vence_el ?? "");
+  const [confirmar, setConfirmar] = useState<"" | "mes" | "anio" | "suspender">("");
+  const [otra, setOtra] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
+  const suspendida = b.estado === "suspendida";
+  const precio = (p: Plan) => planes.find((x) => x.clave === p);
+  const pct = b.precio_mensual && precio(b.plan) && precio(b.plan)!.precio_mensual ? 1 - b.precio_mensual / precio(b.plan)!.precio_mensual : 0;
+  const montoMes = b.precio_mensual;
+  const montoAnio = Math.round((precio(b.plan)?.precio_anual ?? b.precio_mensual * 12) * (1 - pct));
+  const dias = b.vence_el ? diasHasta(b.vence_el) : null;
+  const avance = dias === null ? 100 : Math.max(4, Math.min(100, Math.round((Math.max(0, dias) / 30) * 100)));
+  const cambios = plan !== b.plan || region !== b.region || comuna !== b.comuna || notas !== b.notas || gracia !== String(b.gracia_dias) || vence !== (b.vence_el ?? "");
 
   const cargarPagos = useCallback(async () => {
     const { data } = await supabase
@@ -291,100 +397,214 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
     void cargarPagos();
   }, [cargarPagos]);
 
-  const [abierta, setAbierta] = useState<"pago" | "plan" | "historial" | "dueno" | "">("pago");
-  const [confirmar, setConfirmar] = useState(false);
-  const alternar = (k: typeof abierta) => setAbierta(abierta === k ? "" : k);
-  const suspendida = b.estado === "suspendida";
+  async function cobrar(meses: number, monto: number) {
+    setOcupado(true);
+    setError("");
+    const { data, error: err } = await supabase.rpc("admin_registrar_pago", { p_barberia: b.id, p_monto: monto, p_meses: meses, p_nota: meses === 12 ? "Pago anual" : "Pago mensual" });
+    setOcupado(false);
+    setConfirmar("");
+    if (err) return setError(err.message || "No se pudo registrar el pago.");
+    avisar(`Pago registrado. Vence el ${fechaMes(String(data))}`);
+    onCambio();
+    void cargarPagos();
+  }
 
-  async function suspender() {
-    if (!confirmar) return setConfirmar(true);
-    setConfirmar(false);
+  async function guardar() {
+    const g = Math.round(Number(gracia));
+    if (!Number.isFinite(g) || g < 0 || g > 30) return setError("Los días de gracia deben ser entre 0 y 30.");
+    if ((region && !comuna) || (!region && comuna)) return setError("Elige la región y la comuna.");
+    setOcupado(true);
+    setError("");
     const { data, error: err } = await supabase
       .from("barberias")
-      .update({ estado: suspendida ? "activa" : "suspendida" })
+      .update({ plan, region, comuna, notas: notas.trim(), gracia_dias: g, vence_el: vence || null })
       .eq("id", b.id)
       .select("id");
+    setOcupado(false);
+    if (err || !data || data.length === 0) return setError("No se pudo guardar.");
+    avisar("Cambios guardados");
+    onCambio();
+  }
+
+  async function suspender() {
+    if (confirmar !== "suspender") return setConfirmar("suspender");
+    setConfirmar("");
+    const { data, error: err } = await supabase.from("barberias").update({ estado: suspendida ? "activa" : "suspendida" }).eq("id", b.id).select("id");
     if (err || !data || data.length === 0) return avisar("No se pudo cambiar el estado", "error");
     avisar(suspendida ? "Barbería reactivada" : "Barbería suspendida");
     onCambio();
   }
 
   return (
-    <Hoja titulo="Barbería" onCerrar={onCerrar}>
-      <div className="bar-resumen">
-        <div className="bar-ini" aria-hidden="true">
-          {b.nombre.trim().slice(0, 2).toUpperCase()}
-        </div>
-        <div className="bar-txt">
-          <b>{b.nombre}</b>
-          <small>
-            {PLAN_LABEL[b.plan]} · {b.dueno_nombre ?? "sin dueño"}
-          </small>
-        </div>
-        <span className={`chip sus-${e.tono}`}>{e.texto}</span>
-      </div>
+    <Hoja titulo={b.nombre} onCerrar={onCerrar} ancha>
+      <div className="ficha">
+        <aside className="ficha-izq">
+          <div className="ficha-id">
+            <div className="bar-ini" aria-hidden="true">
+              {b.nombre.trim().slice(0, 2).toUpperCase()}
+            </div>
+            <div className="bar-txt">
+              <b>{b.nombre}</b>
+              <small>/b/{b.slug} · desde {fechaMes(b.creada_en.slice(0, 10))}</small>
+            </div>
+          </div>
+          <div className="ficha-chips">
+            <span className={`chip sus-${e.tono}`}>● {e.texto}</span>
+            <span className={`chip plan-${b.plan}`}>Plan {PLAN_LABEL[b.plan]}</span>
+          </div>
 
-      <div className="bar-rapidas">
-        <button className="btn btn-primario btn-chico" onClick={() => setAbierta("pago")}>
-          Registrar pago
-        </button>
-        <button
-          className="btn btn-borde btn-chico"
-          onClick={() =>
-            navigator.clipboard
-              ?.writeText(enlace)
-              .then(() => avisar("Enlace copiado"))
-              .catch(() => avisar("No se pudo copiar", "error"))
-          }
-        >
-          Copiar enlace
-        </button>
-        <button className="btn btn-borde btn-chico" onClick={() => void suspender()} onBlur={() => setConfirmar(false)}>
-          {confirmar ? "¿Seguro?" : suspendida ? "Reactivar" : "Suspender"}
-        </button>
-      </div>
+          <h3 className="ficha-lab">Suscripción</h3>
+          <div className="ficha-fila">
+            <b>{b.vence_el ? `Vence el ${fechaMes(b.vence_el)}` : "Sin vencimiento"}</b>
+            {dias !== null && <span className="suave chico">{dias >= 0 ? `en ${dias} ${dias === 1 ? "día" : "días"}` : `hace ${-dias} días`}</span>}
+          </div>
+          <div className="mi-plan-barra" aria-hidden="true">
+            <i style={{ width: `${avance}%` }} />
+          </div>
+          <p className="suave chico" style={{ margin: 0 }}>
+            {b.ultimo_pago ? `Último pago: ${fechaMes(b.ultimo_pago)}` : "Todavía sin pagos"} · {b.gracia_dias} {b.gracia_dias === 1 ? "día" : "días"} de gracia
+          </p>
 
-      <Seccion titulo="Registrar pago" resumen={b.vence_el ? `Vence el ${fechaMes(b.vence_el)}` : "Sin vencimiento"} icono="receipt" abierta={abierta === "pago"} onToggle={() => alternar("pago")}>
-        <RegistrarPago b={b} onListo={() => { onCambio(); void cargarPagos(); }} />
-      </Seccion>
-      <Seccion titulo="Plan y vencimiento" resumen={`${PLAN_LABEL[b.plan]} · ${clp(b.precio_mensual)}/mes`} icono="tag" abierta={abierta === "plan"} onToggle={() => alternar("plan")}>
-        <Editar b={b} onListo={onCambio} />
-        <DescuentoBarberia b={b} onListo={onCambio} />
-      </Seccion>
-      <Seccion titulo="Historial de pagos" resumen={pagos ? `${pagos.length} ${pagos.length === 1 ? "pago" : "pagos"}` : ""} icono="clock" abierta={abierta === "historial"} onToggle={() => alternar("historial")}>
-        {pagos && pagos.length === 0 && <p className="suave">Todavía no hay pagos registrados.</p>}
-        <ul className="lista">
-          {(pagos ?? []).map((p) => (
-            <li key={p.id} className="fila">
-              <span className="fila-cuerpo">
-                <b className="num">{clp(p.monto)}</b>
-                <small>
-                  {fechaMes(p.fecha)}
-                  {p.periodo_hasta ? ` · cubre hasta ${fechaMes(p.periodo_hasta)}` : ""}
-                  {p.nota ? ` · ${p.nota}` : ""}
-                </small>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Seccion>
-      <Seccion titulo="Datos y clave del dueño" resumen={b.dueno_correo ?? ""} icono="user" abierta={abierta === "dueno"} onToggle={() => alternar("dueno")}>
-        <div className="datos">
-          <div>
-            <span>Dueño</span>
-            <b>{b.dueno_nombre ?? "—"}</b>
+          <div className="ficha-kpis">
+            <div>
+              <span>Barberos</span>
+              <b>{b.barberos}</b>
+            </div>
+            <div>
+              <span>Citas en 30 días</span>
+              <b>{b.citas_30d}</b>
+            </div>
           </div>
-          <div>
-            <span>Correo</span>
-            <b>{b.dueno_correo ?? "—"}</b>
+
+          <h3 className="ficha-lab">Contacto</h3>
+          <ul className="ficha-contacto">
+            <li>{b.dueno_nombre ?? "Sin dueño"}</li>
+            {b.dueno_telefono && (
+              <li>
+                {formatearTelefono(b.dueno_telefono)}
+                <a href={enlaceWhatsapp(b.dueno_telefono, `Hola ${b.dueno_nombre ?? ""}, te escribo de Fade Studio.`)} target="_blank" rel="noreferrer">
+                  Abrir
+                </a>
+              </li>
+            )}
+            {b.dueno_correo && <li>{b.dueno_correo}</li>}
+            <li>{b.comuna ? `${b.comuna}, ${b.region}` : "Sin comuna todavía"}</li>
+          </ul>
+          <div className="acciones">
+            <a className="btn btn-borde btn-chico" href={enlace} target="_blank" rel="noreferrer">
+              Ver su página ↗
+            </a>
+            <button
+              className="btn btn-borde btn-chico"
+              onClick={() =>
+                navigator.clipboard
+                  ?.writeText(enlace)
+                  .then(() => avisar("Enlace copiado"))
+                  .catch(() => avisar("No se pudo copiar", "error"))
+              }
+            >
+              Copiar enlace
+            </button>
           </div>
-          <div>
-            <span>Página</span>
-            <b>/b/{b.slug}</b>
+        </aside>
+
+        <div className="ficha-der">
+          <h3 className="ficha-lab">Registrar pago</h3>
+          <div className="ficha-cobro">
+            <button className="btn btn-primario" disabled={ocupado} onClick={() => (confirmar === "mes" ? void cobrar(1, montoMes) : setConfirmar("mes"))} onBlur={() => setConfirmar("")}>
+              {confirmar === "mes" ? "¿Confirmar el pago?" : `+ 1 mes · ${clp(montoMes)}`}
+              <small>vence el {fechaMes(vencimientoCon(b, 1))}</small>
+            </button>
+            <button className="btn btn-borde" disabled={ocupado} onClick={() => (confirmar === "anio" ? void cobrar(12, montoAnio) : setConfirmar("anio"))} onBlur={() => setConfirmar("")}>
+              {confirmar === "anio" ? "¿Confirmar el pago?" : `+ 1 año · ${clp(montoAnio)}`}
+              <small>vence el {fechaMes(vencimientoCon(b, 12))}</small>
+            </button>
+            <button className="btn btn-borde" onClick={() => setOtra(!otra)}>
+              Otra fecha
+            </button>
+          </div>
+          {otra && <RegistrarPago b={b} onListo={() => { onCambio(); void cargarPagos(); setOtra(false); }} />}
+
+          <h3 className="ficha-lab">Plan</h3>
+          <div className="ficha-planes" role="radiogroup" aria-label="Plan">
+            {PLANES_ORDEN.map((p) => (
+              <button key={p} role="radio" aria-checked={plan === p} className={`ficha-plan plan-${p}${plan === p ? " on" : ""}`} onClick={() => setPlan(p)}>
+                <span className="ficha-plan-n">
+                  {PLAN_LABEL[p]}
+                  {b.plan === p ? " · actual" : ""}
+                </span>
+                <b>{clp(precio(p)?.precio_mensual ?? 0)}</b>
+                <small>{DESC_PLAN[p]}</small>
+              </button>
+            ))}
+          </div>
+          <p className="suave chico" style={{ margin: 0 }}>
+            Los precios salen de «Planes». {plan !== b.plan ? "Se aplica al guardar y cierra su solicitud de cambio." : "Si cambias el plan, el precio se actualiza solo."}
+          </p>
+
+          <h3 className="ficha-lab">Ubicación</h3>
+          <SelectorComuna region={region} comuna={comuna} onCambio={(r, c) => { setRegion(r); setComuna(c); }} />
+
+          <label className="campo">
+            <span>Nota privada (solo tú la ves)</span>
+            <input value={notas} onChange={(ev) => setNotas(ev.target.value)} maxLength={300} placeholder="Ej. cliente recomendado, paga los primeros de mes" />
+          </label>
+
+          <details className="ficha-mas">
+            <summary>Más opciones</summary>
+            <div className="form-hoja">
+              <div className="fila-dos">
+                <label className="campo">
+                  <span>Vence el</span>
+                  <input type="date" value={vence} onChange={(ev) => setVence(ev.target.value)} />
+                </label>
+                <label className="campo">
+                  <span>Días de gracia</span>
+                  <input type="number" inputMode="numeric" min={0} max={30} value={gracia} onChange={(ev) => setGracia(ev.target.value)} />
+                  <small>Días que puede entrar después de vencer.</small>
+                </label>
+              </div>
+            </div>
+            <DescuentoBarberia b={b} onListo={onCambio} />
+            <h3 style={{ fontSize: 15, margin: "18px 0 6px" }}>Historial de pagos</h3>
+            {pagos && pagos.length === 0 && <p className="suave">Todavía no hay pagos registrados.</p>}
+            <ul className="lista">
+              {(pagos ?? []).map((p) => (
+                <li key={p.id} className="fila">
+                  <span className="fila-cuerpo">
+                    <b className="num">{clp(p.monto)}</b>
+                    <small>
+                      {fechaMes(p.fecha)}
+                      {p.periodo_hasta ? ` · cubre hasta ${fechaMes(p.periodo_hasta)}` : ""}
+                      {p.nota ? ` · ${p.nota}` : ""}
+                    </small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <ClaveDueno b={b} />
+          </details>
+
+          {error && (
+            <p className="aviso error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="ficha-pie">
+            <button className="btn btn-peligro btn-chico" onClick={() => void suspender()} onBlur={() => setConfirmar("")}>
+              {confirmar === "suspender" ? "¿Seguro?" : suspendida ? "Reactivar barbería" : "Suspender barbería"}
+            </button>
+            <div className="ficha-pie-der">
+              <button className="btn btn-borde btn-chico" onClick={onCerrar}>
+                Cerrar
+              </button>
+              <button className="btn btn-primario btn-chico" disabled={ocupado || !cambios} onClick={() => void guardar()}>
+                {ocupado ? "Guardando…" : "Guardar cambios"}
+              </button>
+            </div>
           </div>
         </div>
-        <ClaveDueno b={b} />
-      </Seccion>
+      </div>
     </Hoja>
   );
 }
@@ -504,96 +724,6 @@ function RegistrarPago({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }
       )}
       <button className="btn btn-primario" disabled={ocupado}>
         {ocupado ? "Guardando…" : "Registrar pago y reactivar"}
-      </button>
-    </form>
-  );
-}
-
-function Editar({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
-  const avisar = useToast();
-  const [nombre, setNombre] = useState(b.nombre);
-  const [plan, setPlan] = useState<Plan>(b.plan);
-  const [vence, setVence] = useState(b.vence_el ?? "");
-  const [gracia, setGracia] = useState(String(b.gracia_dias));
-  const [suspendida, setSuspendida] = useState(b.estado === "suspendida");
-  const [notas, setNotas] = useState(b.notas);
-  const [error, setError] = useState("");
-  const [ocupado, setOcupado] = useState(false);
-
-  const guardar = async (ev: FormEvent) => {
-    ev.preventDefault();
-    const g = Math.round(Number(gracia));
-    if (nombre.trim().length < 2) return setError("Escribe el nombre.");
-    if (!Number.isFinite(g) || g < 0 || g > 30) return setError("Los días de gracia deben ser entre 0 y 30.");
-    setOcupado(true);
-    setError("");
-    const { data, error: err } = await supabase
-      .from("barberias")
-      .update({
-        nombre: nombre.trim(),
-        plan,
-        vence_el: vence || null,
-        gracia_dias: g,
-        estado: suspendida ? "suspendida" : "activa",
-        notas: notas.trim(),
-      })
-      .eq("id", b.id)
-      .select("id");
-    setOcupado(false);
-    if (err || !data || data.length === 0) return setError("No se pudo guardar.");
-    avisar("Cambios guardados");
-    onListo();
-  };
-
-  return (
-    <form className="form-hoja" onSubmit={guardar}>
-      <label className="campo">
-        <span>Nombre (para ti)</span>
-        <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} required />
-      </label>
-      <div className="fila-dos">
-        <label className="campo">
-          <span>Plan</span>
-          <select value={plan} onChange={(e) => setPlan(e.target.value as Plan)}>
-            <option value="basico">Básico</option>
-            <option value="pro">Pro</option>
-            <option value="vip">VIP</option>
-          </select>
-        </label>
-        <div className="campo">
-          <span>Precio al mes</span>
-          <b style={{ minHeight: 48, display: "flex", alignItems: "center" }}>{clp(b.precio_mensual)}</b>
-          <small>Sale del plan{b.precio_mensual !== 0 ? " y del descuento aplicado" : ""}. Se cambia en Planes.</small>
-        </div>
-      </div>
-      <div className="fila-dos">
-        <label className="campo">
-          <span>Vence el</span>
-          <input type="date" value={vence} onChange={(e) => setVence(e.target.value)} />
-        </label>
-        <label className="campo">
-          <span>Días de gracia</span>
-          <input type="number" inputMode="numeric" min={0} max={30} value={gracia} onChange={(e) => setGracia(e.target.value)} />
-        </label>
-      </div>
-      <label className="campo">
-        <span>Notas privadas</span>
-        <input value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={300} placeholder="Ej. cliente recomendado" />
-      </label>
-      <label className="interruptor">
-        <input type="checkbox" checked={suspendida} onChange={(e) => setSuspendida(e.target.checked)} />
-        <span>
-          <b>Suspender barbería</b>
-          <small>Bloquea el panel y las reservas al instante. Sus datos se conservan.</small>
-        </span>
-      </label>
-      {error && (
-        <p className="aviso error" role="alert">
-          {error}
-        </p>
-      )}
-      <button className="btn btn-primario" disabled={ocupado}>
-        {ocupado ? "Guardando…" : "Guardar cambios"}
       </button>
     </form>
   );

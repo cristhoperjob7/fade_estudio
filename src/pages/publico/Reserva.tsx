@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import PubNav from "../../components/PubNav";
-import { useRutas, useTemaPublico } from "../../lib/publico";
+import { useRutas, useEsPlantilla, useTemaPublico } from "../../lib/publico";
 import {
   datosPago,
   enviarComprobante,
@@ -22,6 +22,7 @@ export default function Reserva() {
   const { codigo = "" } = useParams();
   const rutas = useRutas();
   const tema = useTemaPublico();
+  const plantilla = useEsPlantilla();
   const [q] = useSearchParams();
   const token = q.get("t") ?? "";
   const [e, setE] = useState<EstadoReserva | null | undefined>(undefined);
@@ -49,7 +50,7 @@ export default function Reserva() {
   }, [estado, cargar]);
 
   return (
-    <div className="pb" style={tema}>
+    <div className={`pb${plantilla ? " pp" : ""}`} style={tema}>
       <PubNav />
       <main className="pb-w pb-flujo">
         {falla && e === undefined ? (

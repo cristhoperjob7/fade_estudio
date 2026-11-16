@@ -123,6 +123,10 @@ export type BarberiaAdmin = {
   ultimo_pago: string | null;
   dueno_nombre: string | null;
   dueno_correo: string | null;
+  region: string;
+  comuna: string;
+  barberos: number;
+  dueno_telefono: string | null;
 };
 
 export type PagoSuscripcion = {

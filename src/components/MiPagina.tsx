@@ -6,6 +6,7 @@ import { urlPagina } from "../lib/publico";
 import type { PaginaPro } from "../lib/publico";
 import { useToast } from "./Toast";
 
+const SOPORTE = ((import.meta.env.VITE_SOPORTE_WHATSAPP as string | undefined) ?? "").replace(/\D/g, "");
 const COLORES = ["#C8A26A", "#2563EB", "#1F8A5B", "#C0392B", "#8E5BD9", "#E07B39", "#D9A441", "#E4E4E7"];
 const VACIA: PaginaPro = { descripcion: "", color: "#C8A26A", logo_path: null, portada_path: null };
 
@@ -39,7 +40,7 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
   const plan = barberia?.plan ?? "basico";
 
   useEffect(() => {
-    if (plan === "basico") return;
+    if (plan !== "pro") return;
     void supabase.rpc("mi_pagina").then(({ data }) => {
       const d = { ...VACIA, ...((data as Partial<PaginaPro> | null) ?? {}) };
       setGuardada(d);
@@ -48,6 +49,33 @@ export default function MiPagina({ onGuardado }: { onGuardado?: (resumen: string
     });
   }, [plan]);
 
+  if (plan === "vip") {
+    return (
+      <>
+        <p style={{ margin: 0 }}>
+          <b>Tu página es a medida.</b>
+        </p>
+        <p className="suave" style={{ margin: 0 }}>
+          Con el plan VIP la página de tu barbería se diseña contigo. Para cambiar fotos, textos o colores, escríbenos y lo hacemos juntos.
+        </p>
+        <div className="acciones">
+          {SOPORTE && (
+            <a
+              className="btn btn-primario btn-chico"
+              href={`https://wa.me/${SOPORTE}?text=${encodeURIComponent("Hola, quiero hacer cambios en la página de mi barbería (plan VIP).")}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Escribir por WhatsApp
+            </a>
+          )}
+          <a className="btn btn-borde btn-chico" href={`/b/${barberia?.slug ?? ""}`} target="_blank" rel="noreferrer">
+            Ver mi página
+          </a>
+        </div>
+      </>
+    );
+  }
   if (plan === "basico") {
     return (
       <>

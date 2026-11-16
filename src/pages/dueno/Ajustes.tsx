@@ -9,6 +9,7 @@ import Ficha from "../../components/Ficha";
 import CambiarClave from "../../components/CambiarClave";
 import ServiciosEditor from "../../components/ServiciosEditor";
 import MiPagina from "../../components/MiPagina";
+import UbicacionBarberia from "../../components/UbicacionBarberia";
 import { useAuth } from "../../lib/auth";
 import { aMinutos, hm } from "../../lib/fecha";
 import { formatearTelefono, normalizarTelefono } from "../../lib/whatsapp";
@@ -160,7 +161,7 @@ export default function Ajustes() {
 
       <Seccion
         titulo="Mi página"
-        resumen={barberia?.plan === "basico" ? "Disponible en el plan Pro" : "Logo, portada, color y descripción"}
+        resumen={barberia?.plan === "basico" ? "Disponible en el plan Pro" : barberia?.plan === "vip" ? "Página a medida" : "Logo, portada, color y descripción"}
         icono="shop"
         abierta={abierta === "mipagina"}
         onToggle={() => alternar("mipagina")}
@@ -193,6 +194,7 @@ export default function Ajustes() {
             <input inputMode="tel" placeholder="+56 9 1234 5678" value={bar.whatsapp} onChange={(e) => setBar({ ...bar, whatsapp: e.target.value })} />
           </Campo>
         </Ficha>
+        <UbicacionBarberia />
       </Seccion>
 
       <Seccion titulo="Datos de transferencia" resumen={cuenta} icono="cash" abierta={abierta === "transferencia"} onToggle={() => alternar("transferencia")}>

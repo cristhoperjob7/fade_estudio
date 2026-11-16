@@ -259,18 +259,19 @@
 .pb-marca-fs { text-align: center; font-size: 12px; color: var(--mut); opacity: .7; padding: 18px 0 26px; }
 
 /* ---------- Pro: plantilla «Portada» ---------- */
-.pp { --acento: #c8a26a; --bg: #0d0d0f; --s1: #17151a; --line: #2c2a30; padding-bottom: 96px; }
+.pp { --acento: #c8a26a; --bg: #0d0d0f; --s1: #17151a; --line: #2c2a30; --on-acento: #15110a; }
+.pp-home { padding-bottom: 96px; }
 .pp-portada { height: 230px; background: #2a241c center / cover no-repeat; position: relative; }
 .pp-velo { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 35%, var(--bg)); }
 .pp-cuerpo { margin-top: -44px; position: relative; max-width: 640px; }
-.pp-logo { width: 84px; height: 84px; border-radius: 50%; border: 4px solid var(--bg); background: var(--acento); display: grid; place-items: center; overflow: hidden; color: #15110a; font: 700 28px var(--alto); }
+.pp-logo { width: 84px; height: 84px; border-radius: 50%; border: 4px solid var(--bg); background: var(--acento); display: grid; place-items: center; overflow: hidden; color: var(--on-acento); font: 700 28px var(--alto); }
 .pp-logo img { width: 100%; height: 100%; object-fit: cover; }
 .pp-nombre { font: 700 clamp(30px, 8vw, 44px)/1 var(--alto); letter-spacing: .03em; text-transform: uppercase; margin: 12px 0 8px; }
 .pp-desc { color: var(--mut); line-height: 1.55; margin-bottom: 8px; white-space: pre-line; }
 .pp-dato { color: var(--mut); font-size: 13.5px; margin-bottom: 16px; }
 .pp-pildoras { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
 .pp-pil { padding: 8px 15px; border-radius: 99px; border: 1px solid var(--line); font-size: 13.5px; }
-.pp-pil.on { background: var(--acento); border-color: var(--acento); color: #15110a !important; font-weight: 700; }
+.pp-pil.on { background: var(--acento); border-color: var(--acento); color: var(--on-acento) !important; font-weight: 700; }
 .pp-sec { margin-bottom: 22px; scroll-margin-top: 90px; }
 .pp-sec h2 { font: 700 20px var(--alto); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; }
 .pp-servicios { display: grid; gap: 8px; }
@@ -284,4 +285,17 @@
 .pp-equipo span { width: 44px; height: 44px; border-radius: 50%; background: #2a241c; color: var(--acento); display: grid; place-items: center; font-weight: 700; }
 .pp-contacto a { color: var(--acento); font-weight: 600; }
 .pp-fijo { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, var(--bg) 35%); display: flex; justify-content: center; z-index: 15; }
-.pp-reservar { width: 100%; max-width: 604px; text-align: center; padding: 15px; border-radius: 12px; background: var(--acento); color: #15110a !important; font-weight: 700; font-size: 16px; }
+.pp-reservar { width: 100%; max-width: 604px; text-align: center; padding: 15px; border-radius: 12px; background: var(--acento); color: var(--on-acento) !important; font-weight: 700; font-size: 16px; }
+
+/* Plantilla Pro: barra superior sin botones y pasos de reserva con el mismo estilo */
+.pp-nav { background: rgba(13, 13, 15, .94); }
+.pp-nav-in { display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; height: 60px; max-width: 640px; margin: 0 auto; padding: 0 8px; }
+.pp-atras { font-size: 34px; line-height: 1; text-align: center; color: var(--tx); padding: 6px 0; }
+.pp-marca { justify-content: center; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+.pp-marca img { width: 36px; height: 36px; }
+.pp-marca b { font-size: 19px; }
+.pp .pb-btn-azul, .pp .pb-horas button.on { color: var(--on-acento); }
+.pp .pb-op, .pp .pb-horas button, .pp .pb-btn, .pp .pb-campo input { border-radius: 12px; }
+.pp .pb-op.on { background: color-mix(in srgb, var(--acento) 12%, var(--s1)); }
+.pp .pb-prog-b i { background: var(--acento); }
+.pp .pb-t1 { letter-spacing: .03em; }

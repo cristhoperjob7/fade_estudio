@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 import { configurado, supabase } from "./supabase";
 import type { Servicio } from "./types";
+import { PAGINAS_A_MEDIDA } from "../pages/publico/personalizadas";
 
 export type AjustesPublicos = {
   nombre: string;
@@ -47,11 +48,29 @@ export function urlPagina(path: string | null | undefined): string | null {
   return supabase.storage.from("paginas").getPublicUrl(path).data.publicUrl;
 }
 
-/** Color de acento de la barbería (Pro y VIP) como variables de la página pública. */
+/** ¿Se muestra la plantilla Pro? (plan Pro, o VIP que todavía no tiene su página a medida) */
+export function useEsPlantilla(): boolean {
+  const slug = useSlug();
+  const { datos } = useBarberiaPublica();
+  if (!datos?.plan || datos.plan === "basico") return false;
+  return datos.plan === "pro" || !PAGINAS_A_MEDIDA[slug];
+}
+
+/** Texto negro o blanco según el color de fondo, para que siempre se lea. */
+function textoSobre(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.6 ? "#15110a" : "#ffffff";
+}
+
+/** Color de la barbería (plantilla Pro) como variables de la página pública. */
 export function useTemaPublico(): CSSProperties | undefined {
   const { datos } = useBarberiaPublica();
-  const c = datos?.plan && datos.plan !== "basico" ? datos.pagina?.color : undefined;
-  return c && /^#[0-9a-f]{6}$/i.test(c) ? ({ "--blue": c, "--gold": c, "--acento": c } as CSSProperties) : undefined;
+  const plantilla = useEsPlantilla();
+  const c = plantilla ? datos?.pagina?.color : undefined;
+  if (!plantilla) return undefined;
+  const color = c && /^#[0-9a-f]{6}$/i.test(c) ? c : "#C8A26A";
+  return { "--blue": color, "--gold": color, "--acento": color, "--on-acento": textoSobre(color) } as CSSProperties;
 }
 
 /** Dirección de la barbería: /b/<slug>/..., o la de por defecto cuando se entra por la raíz. */

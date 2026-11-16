@@ -28,8 +28,8 @@ export default function PaginaPro() {
 
   const servicios = datos?.servicios ?? [];
   return (
-    <div className="pb pp" style={tema}>
-      <PubNav />
+    <div className="pb pp pp-home" style={tema}>
+      <PubNav inicio />
       {datos && !datos.activa && (
         <p className="pb-aviso-cerrada" role="status">
           Esta barbería no está recibiendo reservas por ahora. Escríbenos por WhatsApp.
@@ -61,6 +61,11 @@ export default function PaginaPro() {
           {equipo.length > 1 && (
             <a href="#equipo" className="pp-pil">
               Equipo
+            </a>
+          )}
+          {aj.direccion && (
+            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${aj.nombre} ${aj.direccion}`)}`} target="_blank" rel="noreferrer" className="pp-pil">
+              Cómo llegar
             </a>
           )}
           <a href="#contacto" className="pp-pil">

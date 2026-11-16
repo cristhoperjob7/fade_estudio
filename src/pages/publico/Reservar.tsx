@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PubNav from "../../components/PubNav";
 import { cargarBarberos, cargarHoras, crearReserva, diasTexto, textoError } from "../../lib/reserva";
-import { useBarberiaPublica, useRutas, useSlug, useTemaPublico } from "../../lib/publico";
+import { useBarberiaPublica, useRutas, useSlug, useEsPlantilla, useTemaPublico } from "../../lib/publico";
 import NoEncontrada from "./NoEncontrada";
 import { precioPara, esDiaPromo } from "../../lib/precios";
 import { clp } from "../../lib/dinero";
@@ -23,6 +23,7 @@ export default function Reservar() {
   const slug = useSlug();
   const rutas = useRutas();
   const tema = useTemaPublico();
+  const plantilla = useEsPlantilla();
   const { datos, estado: estadoDatos, aj } = useBarberiaPublica();
   const navegar = useNavigate();
   const hoy = hoyChile();
@@ -122,7 +123,7 @@ export default function Reservar() {
   const sinBarberos = barberos !== null && barberos.length === 0;
 
   return (
-    <div className="pb" style={tema}>
+    <div className={`pb${plantilla ? " pp" : ""}`} style={tema}>
       <PubNav />
       <main className="pb-w pb-flujo">
         {falla ? (
