@@ -11,6 +11,7 @@ import Inicio from "./pages/dueno/Inicio";
 import Ajustes from "./pages/dueno/Ajustes";
 import Reservas from "./pages/dueno/Reservas";
 import Agenda from "./pages/barbero/Agenda";
+import Historial from "./pages/Historial";
 import AgendaGeneral from "./pages/dueno/AgendaGeneral";
 import Equipo from "./pages/dueno/Equipo";
 import Perfil from "./pages/Perfil";
@@ -27,6 +28,7 @@ const PESTANAS_DUENO: Pestana[] = [
   { ruta: "/panel/inicio", texto: "Inicio", icono: "home" },
   { ruta: "/panel/agenda-general", texto: "Agenda", icono: "cal" },
   { ruta: "/panel/reservas", texto: "Reservas", icono: "receipt" },
+  { ruta: "/panel/historial", texto: "Historial", icono: "clock" },
   { ruta: "/panel/equipo", texto: "Equipo", icono: "users" },
   { ruta: "/panel/ajustes", texto: "Ajustes", icono: "settings" },
   { ruta: "/panel/perfil", texto: "Mi perfil", icono: "user", abajo: true },
@@ -40,6 +42,7 @@ const PESTANAS_ADMIN: Pestana[] = [
 ];
 const PESTANAS_BARBERO: Pestana[] = [
   { ruta: "/panel/agenda", texto: "Agenda", icono: "cal" },
+  { ruta: "/panel/historial", texto: "Historial", icono: "clock" },
   { ruta: "/panel/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
 
@@ -113,6 +116,7 @@ export default function App() {
             <Route path="inicio" element={<Inicio />} />
             <Route path="agenda-general" element={<AgendaGeneral />} />
             <Route path="reservas" element={<Reservas />} />
+            <Route path="historial" element={<Historial />} />
             <Route path="equipo" element={<Equipo />} />
             <Route path="ajustes" element={<Ajustes />} />
             <Route path="perfil" element={<Perfil />} />
@@ -122,6 +126,7 @@ export default function App() {
         <Route element={<RequiereRol rol="barbero" />}>
           <Route element={<Shell pestanas={PESTANAS_BARBERO} />}>
             <Route path="agenda" element={<Agenda />} />
+            <Route path="historial" element={<Historial />} />
             <Route path="cuenta" element={<Navigate to="/panel/perfil" replace />} />
             <Route path="perfil" element={<Perfil />} />
           </Route>
