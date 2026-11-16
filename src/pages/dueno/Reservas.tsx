@@ -20,11 +20,13 @@ type Fila = {
   estado: EstadoCita;
   comprobante_path: string | null;
   comprobante_en: string | null;
+  comprobante_mime: string | null;
+  comprobante_bytes: number | null;
   barbero: { nombre: string } | { nombre: string }[] | null;
 };
 
 const CAMPOS =
-  "id,codigo,servicio_nombre,precio,fecha,inicio_min,cliente_nombre,cliente_telefono,estado,comprobante_path,comprobante_en,barbero:perfiles!barbero_id(nombre)";
+  "id,codigo,servicio_nombre,precio,fecha,inicio_min,cliente_nombre,cliente_telefono,estado,comprobante_path,comprobante_en,comprobante_mime,comprobante_bytes,barbero:perfiles!barbero_id(nombre)";
 const MOTIVOS = ["No llegó la transferencia", "El monto no coincide", "El comprobante no se ve bien"];
 
 const nombreBarbero = (b: Fila["barbero"]) => (Array.isArray(b) ? b[0]?.nombre : b?.nombre) ?? "—";
@@ -276,6 +278,13 @@ function Revision({
   return (
     <Hoja titulo="Revisar comprobante" onCerrar={onCerrar}>
       {datos}
+
+      {cita.comprobante_mime && (
+        <p className="suave">
+          Archivo revisado por el sistema ({cita.comprobante_mime === "application/pdf" ? "PDF" : cita.comprobante_mime.replace("image/", "").toUpperCase()}
+          {cita.comprobante_bytes ? `, ${Math.max(1, Math.round(cita.comprobante_bytes / 1024))} KB` : ""}). Aun así, confirma en tu banco que llegó el dinero.
+        </p>
+      )}
 
       <div className="comprobante">
         {!url ? (

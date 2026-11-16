@@ -71,16 +71,27 @@ export async function datosPago(codigo: string, token: string): Promise<DatosPag
 export const TIPOS_COMPROBANTE = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 export const MAX_COMPROBANTE = 5 * 1024 * 1024;
 
-/** Sube el archivo al bucket privado y avisa que la reserva pasa a revisión. */
+/** Envía el comprobante a la función del servidor, que lo revisa, lo guarda y pasa la reserva a revisión. */
 export async function enviarComprobante(codigo: string, token: string, archivo: File): Promise<void> {
-  if (!TIPOS_COMPROBANTE.includes(archivo.type)) throw new Error("Sube una foto (JPG, PNG, WEBP) o un PDF.");
   if (archivo.size > MAX_COMPROBANTE) throw new Error("El archivo pesa más de 5 MB.");
-  const ext = archivo.type === "application/pdf" ? "pdf" : archivo.type === "image/png" ? "png" : archivo.type === "image/webp" ? "webp" : "jpg";
-  const ruta = `${codigo}/${token}-${Date.now()}.${ext}`;
-  const sube = await supabase.storage.from("comprobantes").upload(ruta, archivo, { contentType: archivo.type, upsert: false });
-  if (sube.error) throw new Error("No pudimos subir el archivo. Revisa que la reserva siga vigente e inténtalo de nuevo.");
-  const { error } = await supabase.rpc("registrar_comprobante", { p_codigo: codigo, p_token: token, p_ruta: ruta });
-  if (error) throw error;
+  const form = new FormData();
+  form.append("codigo", codigo);
+  form.append("token", token);
+  form.append("archivo", archivo);
+  const llave = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+  let resp: Response;
+  try {
+    resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/subir-comprobante`, {
+      method: "POST",
+      headers: { apikey: llave, Authorization: `Bearer ${llave}` },
+      body: form,
+    });
+  } catch {
+    throw new Error("No hay conexión. Revisa tu internet e inténtalo de nuevo.");
+  }
+  if (resp.ok) return;
+  const datos = (await resp.json().catch(() => ({}))) as { error?: string };
+  throw new Error(datos.error || "No pudimos subir el archivo. Inténtalo de nuevo.");
 }
 
 export type EstadoReserva = {
