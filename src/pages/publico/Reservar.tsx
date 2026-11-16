@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PubNav from "../../components/PubNav";
 import { cargarBarberos, cargarHoras, crearReserva, diasTexto, textoError } from "../../lib/reserva";
-import { useBarberiaPublica, useRutas, useSlug } from "../../lib/publico";
+import { useBarberiaPublica, useRutas, useSlug, useTemaPublico } from "../../lib/publico";
 import NoEncontrada from "./NoEncontrada";
 import { precioPara, esDiaPromo } from "../../lib/precios";
 import { clp } from "../../lib/dinero";
@@ -22,6 +22,7 @@ const TITULO: Record<Paso, string> = {
 export default function Reservar() {
   const slug = useSlug();
   const rutas = useRutas();
+  const tema = useTemaPublico();
   const { datos, estado: estadoDatos, aj } = useBarberiaPublica();
   const navegar = useNavigate();
   const hoy = hoyChile();
@@ -121,7 +122,7 @@ export default function Reservar() {
   const sinBarberos = barberos !== null && barberos.length === 0;
 
   return (
-    <div className="pb">
+    <div className="pb" style={tema}>
       <PubNav />
       <main className="pb-w pb-flujo">
         {falla ? (
@@ -330,6 +331,7 @@ export default function Reservar() {
           </>
         )}
       </main>
+      {datos?.plan === "basico" && <p className="pb-marca-fs">Hecho con Fade Studio</p>}
     </div>
   );
 }

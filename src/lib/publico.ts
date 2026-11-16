@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 import { configurado, supabase } from "./supabase";
 import type { Servicio } from "./types";
@@ -13,8 +14,14 @@ export type AjustesPublicos = {
   tolerancia_min: number;
 };
 
+export type PlanClave = "basico" | "pro" | "vip";
+export type PaginaPro = { descripcion: string; color: string; logo_path: string | null; portada_path: string | null };
+
 export type DatosPublicos = AjustesPublicos & {
   slug: string;
+  plan?: PlanClave;
+  /** Plantilla editable (solo Pro y VIP). null si todavía no la personalizó. */
+  pagina?: PaginaPro | null;
   /** false si la suscripción de la barbería está vencida o suspendida */
   activa: boolean;
   servicios: Servicio[];
@@ -33,6 +40,19 @@ export const AJUSTES_BASE: AjustesPublicos = {
 
 /** Barbería que se muestra en la raíz del sitio (variable VITE_BARBERIA_POR_DEFECTO). Vacío = página de Fade Studio. */
 export const SLUG_DEFECTO = ((import.meta.env.VITE_BARBERIA_POR_DEFECTO as string | undefined) ?? "").trim().toLowerCase();
+
+/** Dirección pública de una imagen de la página (logo o portada). */
+export function urlPagina(path: string | null | undefined): string | null {
+  if (!path) return null;
+  return supabase.storage.from("paginas").getPublicUrl(path).data.publicUrl;
+}
+
+/** Color de acento de la barbería (Pro y VIP) como variables de la página pública. */
+export function useTemaPublico(): CSSProperties | undefined {
+  const { datos } = useBarberiaPublica();
+  const c = datos?.plan && datos.plan !== "basico" ? datos.pagina?.color : undefined;
+  return c && /^#[0-9a-f]{6}$/i.test(c) ? ({ "--blue": c, "--gold": c, "--acento": c } as CSSProperties) : undefined;
+}
 
 /** Dirección de la barbería: /b/<slug>/..., o la de por defecto cuando se entra por la raíz. */
 export function useSlug(): string {

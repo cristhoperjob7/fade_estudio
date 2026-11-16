@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import { useAjustesPublicos, useMarcaPropia, useRutas } from "../lib/publico";
+import { urlPagina, useBarberiaPublica, useMarcaPropia, useRutas } from "../lib/publico";
 import { FadeMark } from "./FadeLogo";
 
 /** Barra superior de las páginas públicas. */
 export default function PubNav({ completa = false }: { completa?: boolean }) {
-  const aj = useAjustesPublicos();
+  const { datos, aj } = useBarberiaPublica();
+  const logo = datos?.plan !== "basico" ? urlPagina(datos?.pagina?.logo_path) : null;
   const rutas = useRutas();
   const propia = useMarcaPropia();
   return (
@@ -23,7 +24,7 @@ export default function PubNav({ completa = false }: { completa?: boolean }) {
           </Link>
         )}
         <Link to={rutas.inicio} className="pb-marca">
-          {propia ? <img src="/logo.png" alt="" width={44} height={44} /> : <FadeMark size={34} />}
+          {logo ? <img src={logo} alt="" width={44} height={44} /> : propia ? <img src="/logo.png" alt="" width={44} height={44} /> : <FadeMark size={34} />}
           <b>{aj.nombre}</b>
         </Link>
         <div className="pb-nav-der">

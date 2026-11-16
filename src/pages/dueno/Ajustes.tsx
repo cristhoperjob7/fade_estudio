@@ -7,6 +7,7 @@ import Seccion from "../../components/Seccion";
 import Ficha from "../../components/Ficha";
 import CambiarClave from "../../components/CambiarClave";
 import ServiciosEditor from "../../components/ServiciosEditor";
+import MiPagina from "../../components/MiPagina";
 import { useAuth } from "../../lib/auth";
 import { aMinutos, hm } from "../../lib/fecha";
 import { formatearTelefono, normalizarTelefono } from "../../lib/whatsapp";
@@ -155,6 +156,16 @@ export default function Ajustes() {
           </button>
         </Seccion>
       )}
+
+      <Seccion
+        titulo="Mi página"
+        resumen={barberia?.plan === "basico" ? "Disponible en el plan Pro" : "Logo, portada, color y descripción"}
+        icono="shop"
+        abierta={abierta === "mipagina"}
+        onToggle={() => alternar("mipagina")}
+      >
+        <MiPagina />
+      </Seccion>
 
       <Seccion titulo="Servicios y precios" resumen="Cortes, barba, ofertas por día" icono="scissors" abierta={abierta === "servicios"} onToggle={() => alternar("servicios")}>
         <ServiciosEditor />
