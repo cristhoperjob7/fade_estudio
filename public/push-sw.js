@@ -6,7 +6,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(d.titulo || "Fade Studio", {
       body: d.cuerpo || "",
       icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      badge: "/icons/badge-96.png",
       tag: d.etiqueta || "fade-studio",
       renotify: true,
       data: { url: d.url || "/panel/reservas" },

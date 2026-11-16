@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["logo.png", "icons/apple-touch-icon.png"],
+      includeAssets: ["logo.png", "favicon.svg", "favicon-32.png", "icons/apple-touch-icon.png", "icons/badge-96.png"],
       // Agrega al service worker la parte que recibe los avisos push (public/push-sw.js).
       workbox: { importScripts: ["push-sw.js"] },
       manifest: {

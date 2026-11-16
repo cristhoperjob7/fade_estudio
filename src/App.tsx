@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useAuth } from "./lib/auth";
 import type { Rol } from "./lib/types";
+import { FadeMark } from "./components/FadeLogo";
 import Shell from "./components/Shell";
 import type { Pestana } from "./components/Shell";
 import Home from "./pages/publico/Home";
@@ -52,7 +53,7 @@ const PESTANAS_BARBERO: Pestana[] = [
 function Cargando() {
   return (
     <div className="splash" role="status" aria-label="Cargando">
-      <img src="/logo.png" alt="" width={72} height={72} />
+      <FadeMark size={72} />
     </div>
   );
 }
