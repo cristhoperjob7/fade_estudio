@@ -251,3 +251,6 @@
 /* Plantilla neutra (barberías sin marca propia) y aviso de suscripción vencida */
 .pb-sin-foto { grid-template-columns: 1fr !important; max-width: 720px; }
 .pb-aviso-cerrada { background: #3a2a0c; color: #f2d58a; text-align: center; padding: 12px 18px; font-size: 14.5px; }
+
+.pb-copiar-todo { width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--gold); color: #0a0a0f; border: 0; }
+.pb-copiar-todo.ok { background: #2f8f62; color: #fff; }

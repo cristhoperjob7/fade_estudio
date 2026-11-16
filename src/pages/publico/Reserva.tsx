@@ -223,27 +223,31 @@ function Pago({ e, token, onCambio }: { e: EstadoReserva; token: string; onCambi
           </a>
         </div>
       ) : (
-        <ul className="pb-datos">
-          {filas.map(([k, v]) => (
-            <li key={k}>
-              <span>
-                <small>{k}</small>
-                <b>{v}</b>
-              </span>
-              <button
-                className="pb-copiar"
-                onClick={async () => {
-                  if (await copiar(v)) {
-                    setCopiado(k);
-                    window.setTimeout(() => setCopiado(""), 1600);
-                  }
-                }}
-              >
-                {copiado === k ? "Copiado" : "Copiar"}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="pb-datos">
+            {filas.map(([k, v]) => (
+              <li key={k}>
+                <span>
+                  <small>{k}</small>
+                  <b>{v}</b>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <button
+            className={`pb-btn pb-copiar-todo ${copiado ? "ok" : ""}`}
+            onClick={async () => {
+              const texto = [...filas.map(([k, v]) => `${k}: ${v}`), `Monto: ${clp(d?.monto ?? e.precio)}`].join("\n");
+              if (await copiar(texto)) {
+                setCopiado("todo");
+                window.setTimeout(() => setCopiado(""), 2200);
+              }
+            }}
+          >
+            <Icon nombre={copiado ? "check" : "receipt"} size={20} />
+            {copiado ? "Datos copiados" : "Copiar todos los datos"}
+          </button>
+        </>
       )}
 
       <h2 className="pb-t2">2. Sube tu comprobante</h2>

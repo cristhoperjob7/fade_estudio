@@ -11,7 +11,7 @@ import SelectorDia from "../../components/SelectorDia";
 import Hoja from "../../components/Hoja";
 import Icon from "../../components/Icon";
 
-const PX_HORA = 64; // alto en pantalla de una hora
+const PX_HORA = 84; // alto en pantalla de una hora
 const CAMPOS = "id,codigo,barbero_id,servicio_nombre,precio,fecha,inicio_min,dur_min,cliente_nombre,cliente_telefono,estado";
 const VISIBLES: EstadoCita[] = ["confirmada", "atendida", "no_llego"];
 
@@ -122,7 +122,7 @@ export default function Agenda() {
         {lista.map((c) => (
           <button
             key={c.id}
-            className={`ev ${c.estado === "atendida" ? "ok" : c.estado === "no_llego" ? "nollego" : ""} ${c.dur_min <= 30 ? "corto" : ""}`}
+            className={`ev ${c.estado === "atendida" ? "ok" : c.estado === "no_llego" ? "nollego" : ""} ${c.dur_min < 30 ? "micro" : c.dur_min <= 30 ? "corto" : ""}`}
             style={{ top: y(c.inicio_min) + 1, height: (c.dur_min / 60) * PX_HORA - 3 }}
             onClick={() => setSel(c)}
           >

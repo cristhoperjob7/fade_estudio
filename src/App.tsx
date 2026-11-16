@@ -13,7 +13,6 @@ import Reservas from "./pages/dueno/Reservas";
 import Agenda from "./pages/barbero/Agenda";
 import AgendaGeneral from "./pages/dueno/AgendaGeneral";
 import Equipo from "./pages/dueno/Equipo";
-import Cuenta from "./pages/Cuenta";
 import Perfil from "./pages/Perfil";
 import Landing from "./pages/Landing";
 import Vencida from "./pages/Vencida";
@@ -30,16 +29,18 @@ const PESTANAS_DUENO: Pestana[] = [
   { ruta: "/panel/reservas", texto: "Reservas", icono: "receipt" },
   { ruta: "/panel/equipo", texto: "Equipo", icono: "users" },
   { ruta: "/panel/ajustes", texto: "Ajustes", icono: "settings" },
+  { ruta: "/panel/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
 const PESTANAS_ADMIN: Pestana[] = [
   { ruta: "/admin/resumen", texto: "Resumen", icono: "home" },
   { ruta: "/admin/barberias", texto: "Barberías", icono: "shop" },
   { ruta: "/admin/solicitudes", texto: "Solicitudes", icono: "inbox" },
   { ruta: "/admin/planes", texto: "Planes", icono: "tag" },
+  { ruta: "/admin/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
 const PESTANAS_BARBERO: Pestana[] = [
   { ruta: "/panel/agenda", texto: "Agenda", icono: "cal" },
-  { ruta: "/panel/cuenta", texto: "Cuenta", icono: "user" },
+  { ruta: "/panel/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
 
 function Cargando() {
@@ -121,7 +122,7 @@ export default function App() {
         <Route element={<RequiereRol rol="barbero" />}>
           <Route element={<Shell pestanas={PESTANAS_BARBERO} />}>
             <Route path="agenda" element={<Agenda />} />
-            <Route path="cuenta" element={<Cuenta />} />
+            <Route path="cuenta" element={<Navigate to="/panel/perfil" replace />} />
             <Route path="perfil" element={<Perfil />} />
           </Route>
         </Route>

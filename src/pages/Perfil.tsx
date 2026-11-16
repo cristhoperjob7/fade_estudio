@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import Avatar, { iniciales } from "../components/Avatar";
 import { FormularioClave } from "../components/CambiarClave";
+import { useAuth } from "../lib/auth";
 import Ficha from "../components/Ficha";
 import { formatearTelefono } from "../lib/whatsapp";
 import Icon from "../components/Icon";
@@ -13,6 +14,7 @@ const ROL_TEXTO = { dueno: "Dueño", barbero: "Barbero", superadmin: "Superadmin
 /** «Mi perfil»: foto y datos personales. Sirve para Dueño, Barbero y Superadmin. */
 export default function Perfil() {
   const avisar = useToast();
+  const { perfil } = useAuth();
   const { datos, foto } = useMiPerfil();
   const archivo = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
@@ -122,6 +124,7 @@ export default function Perfil() {
             { etiqueta: "Celular", valor: datos.telefono ? formatearTelefono(datos.telefono) : "" },
             { etiqueta: "Edad", valor: datos.edad ? `${datos.edad} años` : "" },
             { etiqueta: "Correo", valor: datos.correo },
+            ...(datos.rol === "barbero" && perfil ? [{ etiqueta: "Comisión", valor: `${perfil.comision_pct}%` }] : []),
           ]}
           onGuardar={guardar}
           onCancelar={restaurar}

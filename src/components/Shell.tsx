@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { ROL_LABEL } from "../lib/types";
@@ -8,14 +8,22 @@ import { useMiPerfil } from "../lib/perfil";
 import Icon from "./Icon";
 import type { NombreIcono } from "./Icon";
 
-export type Pestana = { ruta: string; texto: string; icono: NombreIcono };
+/** Una opción del menú lateral. `abajo` la deja en el grupo inferior (cuenta). */
+export type Pestana = { ruta: string; texto: string; icono: NombreIcono; abajo?: boolean };
 
-/** Marco común del panel: cabecera con rol dorado, contenido y barra inferior. */
+/**
+ * Marco del panel: menú lateral izquierdo (fijo en computador; en celular y tablet se abre con el botón ☰),
+ * barra superior con el nombre de la sección y el contenido. Las opciones dependen del perfil.
+ */
 export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
   const { perfil, esAdmin, cerrarSesion } = useAuth();
   const navegar = useNavigate();
+  const { pathname } = useLocation();
   const [barberia, setBarberia] = useState("");
   const [pendientes, setPendientes] = useState(0);
+  const [abierto, setAbierto] = useState(false);
+  const botonMenu = useRef<HTMLButtonElement>(null);
+  const lateral = useRef<HTMLElement>(null);
   const { datos: mio, foto } = useMiPerfil(Boolean(perfil || esAdmin));
 
   useEffect(() => {
@@ -46,8 +54,32 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
     };
   }, [perfil?.rol]);
 
+  const cerrar = useCallback(() => {
+    setAbierto(false);
+    botonMenu.current?.focus();
+  }, []);
+
+  // Al cambiar de sección el menú se cierra solo.
+  useEffect(() => {
+    setAbierto(false);
+  }, [pathname]);
+
+  // Con el menú abierto: Esc lo cierra y la página de atrás no se desplaza.
+  useEffect(() => {
+    if (!abierto) return;
+    const tecla = (e: KeyboardEvent) => e.key === "Escape" && cerrar();
+    document.addEventListener("keydown", tecla);
+    document.body.style.overflow = "hidden";
+    lateral.current?.querySelector<HTMLElement>("a, button")?.focus();
+    return () => {
+      document.removeEventListener("keydown", tecla);
+      document.body.style.overflow = "";
+    };
+  }, [abierto, cerrar]);
+
   if (!perfil && !esAdmin) return null;
   const nombreMostrar = mio ? [mio.nombre, mio.apellidos].filter(Boolean).join(" ") : "";
+  const rojo = !perfil;
   const titulo = perfil
     ? perfil.rol === "dueno"
       ? barberia || perfil.nombre
@@ -55,49 +87,93 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
     : nombreMostrar || "Fade Studio";
   const rolTexto = perfil ? ROL_LABEL[perfil.rol] : "Superadmin";
   const ini = perfil ? perfil.iniciales || iniciales(perfil.nombre) : mio?.nombre ? iniciales(nombreMostrar) : "FS";
-  const rojo = !perfil;
+  const rutaPerfil = rojo ? "/admin/perfil" : "/panel/perfil";
+  const actual = pestanas.find((p) => pathname === p.ruta || pathname.startsWith(p.ruta + "/"));
+  const principales = pestanas.filter((p) => !p.abajo);
+  const cuenta = pestanas.filter((p) => p.abajo);
+
+  const enlace = (p: Pestana) => (
+    <NavLink key={p.ruta} to={p.ruta} className={({ isActive }) => `lat-item${isActive ? " on" : ""}`}>
+      <Icon nombre={p.icono} size={21} />
+      <span>{p.texto}</span>
+      {p.ruta === "/panel/reservas" && pendientes > 0 && (
+        <em className="lat-insignia" aria-label={`${pendientes} por revisar`}>
+          {pendientes}
+        </em>
+      )}
+    </NavLink>
+  );
 
   return (
-    <div className="app">
-      <header className="cabecera">
-        <Link to={rojo ? "/admin/perfil" : "/panel/perfil"} className="avatar-link" aria-label="Mi perfil">
-          <Avatar iniciales={ini} foto={foto} rojo={rojo} />
-        </Link>
-        <div className="quien">
-          <b>{titulo}</b>
-          <span className={rojo ? "rol-rojo" : "rol-oro"}>{rolTexto}</span>
+    <div className={`panel${rojo ? " panel-rojo" : ""}`}>
+      <aside ref={lateral} id="menu-lateral" className={`lateral${abierto ? " abierto" : ""}`} aria-label="Menú principal">
+        <div className="lat-marca">
+          <svg className="lat-logo" viewBox="0 0 40 30" width="34" height="26" aria-hidden="true">
+            <rect x="0" y="1" width="5" height="28" rx="2.5" fill="#2563eb" />
+            <rect x="9" y="4" width="5" height="22" rx="2.5" fill="#2f5fd0" />
+            <rect x="18" y="9" width="5" height="12" rx="2.5" fill="#c9a24a" />
+            <rect x="27" y="12" width="5" height="6" rx="2.5" fill="#e0b24a" />
+            <rect x="35" y="13.5" width="5" height="3" rx="1.5" fill="#e0b24a" />
+          </svg>
+          <b>Fade Studio</b>
+          <button type="button" className="icono-btn lat-cerrar" aria-label="Cerrar menú" onClick={cerrar}>
+            <Icon nombre="close" />
+          </button>
         </div>
+
+        <Link to={rutaPerfil} className="lat-yo" aria-label="Mi perfil">
+          <Avatar iniciales={ini} foto={foto} rojo={rojo} />
+          <span className="quien">
+            <b>{titulo}</b>
+            <span className={rojo ? "rol-rojo" : "rol-oro"}>{rolTexto}</span>
+          </span>
+        </Link>
+
+        <nav className="lat-nav">
+          {principales.map(enlace)}
+          {cuenta.length > 0 && <div className="lat-sep" role="presentation" />}
+          {cuenta.map(enlace)}
+        </nav>
+
         <button
-          className="icono-btn"
-          aria-label="Cerrar sesión"
+          type="button"
+          className="lat-item lat-salir"
           onClick={async () => {
             await cerrarSesion();
             navegar("/login", { replace: true });
           }}
         >
-          <Icon nombre="logout" />
+          <Icon nombre="logout" size={21} />
+          <span>Cerrar sesión</span>
         </button>
-      </header>
+      </aside>
 
-      <main className="contenido">
-        <Outlet />
-      </main>
+      {abierto && <div className="lat-fondo" onClick={cerrar} aria-hidden="true" />}
 
-      {pestanas.length > 1 && (
-        <nav className="pestanas" aria-label="Secciones">
-          {pestanas.map((p) => (
-            <NavLink key={p.ruta} to={p.ruta} className={({ isActive }) => (isActive ? "on" : "")}>
-              <Icon nombre={p.icono} />
-              {p.texto}
-              {p.ruta === "/panel/reservas" && pendientes > 0 && (
-                <span className="insignia" aria-label={`${pendientes} por revisar`}>
-                  {pendientes}
-                </span>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-      )}
+      <div className="panel-der">
+        <header className="barra-sup">
+          <button
+            ref={botonMenu}
+            type="button"
+            className="icono-btn"
+            aria-label="Abrir menú"
+            aria-expanded={abierto}
+            aria-controls="menu-lateral"
+            onClick={() => setAbierto(true)}
+          >
+            <Icon nombre="menu" />
+            {pendientes > 0 && <i className="barra-punto" aria-hidden="true" />}
+          </button>
+          <b className="barra-titulo">{actual?.texto ?? titulo}</b>
+          <Link to={rutaPerfil} className="barra-yo" aria-label="Mi perfil">
+            {foto ? <img src={foto} alt="" /> : <span>{ini.slice(0, 2).toUpperCase()}</span>}
+          </Link>
+        </header>
+
+        <main className="contenido">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
