@@ -1,3 +1,5 @@
+import CodigoDescuento from "../components/CodigoDescuento";
+import type { CodigoValido } from "../components/CodigoDescuento";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -42,6 +44,7 @@ export default function Contratar() {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [desc, setDesc] = useState<CodigoValido | null>(null);
 
   const k = Math.max(0, PLANES_DEF.findIndex((d) => d.clave === plan));
   const def = PLANES_DEF[k]!;
@@ -63,6 +66,7 @@ export default function Contratar() {
       p_correo: correo,
       p_plan: plan,
       p_ciclo: ciclo,
+      p_codigo: ciclo === "prueba" ? null : desc?.codigo ?? null,
     });
     setEnviando(false);
     if (err) return setError(err.message.length < 120 ? err.message : "No pudimos enviar tu solicitud. Intenta de nuevo.");
@@ -271,6 +275,7 @@ export default function Contratar() {
                 </span>
                 <input type="email" inputMode="email" value={correo} onChange={(e) => setCorreo(e.target.value)} maxLength={120} autoComplete="email" />
               </label>
+              {ciclo !== "prueba" && <CodigoDescuento valor={desc} onCambio={setDesc} clase="en-portada" />}
               {error && (
                 <p className="fs-error" role="alert">
                   {error}

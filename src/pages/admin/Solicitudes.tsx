@@ -20,6 +20,10 @@ export type Solicitud = {
   estado: "nueva" | "contactada" | "creada" | "descartada";
   notas: string | null;
   es_cambio?: boolean;
+  barberia_id?: string | null;
+  descuento_codigo?: string | null;
+  descuento_pct?: number | null;
+  descuento_meses?: number | null;
 };
 
 const ESTADOS: { v: Solicitud["estado"]; t: string }[] = [
@@ -63,6 +67,11 @@ export default function Solicitudes() {
     if (err) return avisar("No se pudo cambiar el estado");
     setAbierta({ ...s, estado });
     void cargar();
+  };
+
+  const aplicarCodigo = async (s: Solicitud) => {
+    const { error: err } = await supabase.rpc("admin_aplicar_descuento", { p_barberia: s.barberia_id, p_codigo: s.descuento_codigo });
+    avisar(err ? err.message : "Descuento aplicado a la barbería");
   };
 
   const crear = (s: Solicitud) => nav("/admin/barberias", { state: { solicitud: s } });
@@ -109,6 +118,12 @@ export default function Solicitudes() {
             <p style={{ marginTop: 10 }}>
               Plan <b>{PLAN_LABEL[abierta.plan]}</b> · {CICLO[abierta.ciclo]}
             </p>
+            {abierta.descuento_codigo && (
+              <p style={{ marginTop: 6 }}>
+                Código <b className="num">{abierta.descuento_codigo}</b>: −{abierta.descuento_pct}% por {abierta.descuento_meses}{" "}
+                {abierta.descuento_meses === 1 ? "mes" : "meses"}
+              </p>
+            )}
           </div>
           <a
             className="btn btn-primario btn-ancho"
@@ -121,9 +136,16 @@ export default function Solicitudes() {
             <Icon nombre="whatsapp" size={20} /> Escribir por WhatsApp
           </a>
           {abierta.es_cambio ? (
-            <p className="suave" style={{ marginTop: 12 }}>
-              Es una barbería que ya está registrada. Cuando confirmes el pago, cambia su plan en Barberías.
-            </p>
+            <>
+              <p className="suave" style={{ marginTop: 12 }}>
+                Es una barbería que ya está registrada. Cuando confirmes el pago, cambia su plan en Barberías.
+              </p>
+              {abierta.descuento_codigo && abierta.barberia_id && (
+                <button className="btn btn-borde btn-ancho" style={{ marginTop: 10 }} onClick={() => void aplicarCodigo(abierta)}>
+                  <Icon nombre="percent" size={20} /> Aplicar el código a la barbería
+                </button>
+              )}
+            </>
           ) : (
             <button className="btn btn-borde btn-ancho" style={{ marginTop: 10 }} onClick={() => crear(abierta)}>
               <Icon nombre="shop" size={20} /> Crear la barbería con estos datos

@@ -110,8 +110,6 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
   const [slug, setSlug] = useState(inicial ? aSlug(inicial.nombre_barberia) : "");
   const [slugEditado, setSlugEditado] = useState(false);
   const [plan, setPlan] = useState<Plan>(inicial?.plan ?? "basico");
-  const [precio, setPrecio] = useState("");
-  const [precioTocado, setPrecioTocado] = useState(false);
   const [prueba, setPrueba] = useState(inicial && inicial.ciclo !== "prueba" ? "0" : String(DIAS_PRUEBA));
   const [dueno, setDueno] = useState(inicial?.contacto ?? "");
   const [correo, setCorreo] = useState(inicial?.correo ?? "");
@@ -119,11 +117,6 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
   const [error, setError] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [creada, setCreada] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!precioTocado) setPrecio(String(precioDe(plan)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, planes, precioTocado]);
 
   const vence = (() => {
     const n = Math.max(0, Math.round(Number(prueba) || 0));
@@ -141,7 +134,7 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
       nombre,
       slug,
       plan,
-      precio_mensual: Number(precio),
+      precio_mensual: precioDe(plan),
       vence_el: vence,
       dueno_nombre: dueno,
       dueno_correo: correo,
@@ -150,6 +143,10 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
     setOcupado(false);
     if (motivo) return setError(motivo);
     if (inicial) await supabase.rpc("admin_estado_solicitud", { p_id: inicial.id, p_estado: "creada" });
+    if (inicial?.descuento_codigo) {
+      const { data: nueva } = await supabase.from("barberias").select("id").eq("slug", slug).maybeSingle();
+      if (nueva) await supabase.rpc("admin_aplicar_descuento", { p_barberia: (nueva as { id: string }).id, p_codigo: inicial.descuento_codigo });
+    }
     avisar("Barbería creada");
     setCreada(slug);
   };
@@ -225,7 +222,6 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
               value={plan}
               onChange={(e) => {
                 setPlan(e.target.value as Plan);
-                setPrecioTocado(false);
               }}
             >
               <option value="basico">Básico</option>
@@ -233,20 +229,11 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
               <option value="vip">VIP</option>
             </select>
           </label>
-          <label className="campo">
+          <div className="campo">
             <span>Precio al mes</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={precio}
-              onChange={(e) => {
-                setPrecio(e.target.value);
-                setPrecioTocado(true);
-              }}
-              required
-            />
-          </label>
+            <b style={{ minHeight: 48, display: "flex", alignItems: "center" }}>{clp(precioDe(plan))}</b>
+            <small>Es el precio del plan, igual para todos.</small>
+          </div>
         </div>
         <label className="campo">
           <span>Días de prueba gratis</span>
@@ -362,6 +349,7 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
       </Seccion>
       <Seccion titulo="Plan y vencimiento" resumen={`${PLAN_LABEL[b.plan]} · ${clp(b.precio_mensual)}/mes`} icono="tag" abierta={abierta === "plan"} onToggle={() => alternar("plan")}>
         <Editar b={b} onListo={onCambio} />
+        <DescuentoBarberia b={b} onListo={onCambio} />
       </Seccion>
       <Seccion titulo="Historial de pagos" resumen={pagos ? `${pagos.length} ${pagos.length === 1 ? "pago" : "pagos"}` : ""} icono="clock" abierta={abierta === "historial"} onToggle={() => alternar("historial")}>
         {pagos && pagos.length === 0 && <p className="suave">Todavía no hay pagos registrados.</p>}
@@ -398,6 +386,66 @@ function Detalle({ b, onCerrar, onCambio }: { b: BarberiaAdmin; onCerrar: () => 
         <ClaveDueno b={b} />
       </Seccion>
     </Hoja>
+  );
+}
+
+function DescuentoBarberia({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
+  const avisar = useToast();
+  const [d, setD] = useState<{ descuento_codigo: string | null; descuento_pct: number; descuento_meses: number } | null>(null);
+  const [codigo, setCodigo] = useState("");
+  const [error, setError] = useState("");
+  const [ocupado, setOcupado] = useState(false);
+
+  const cargar = useCallback(async () => {
+    const { data } = await supabase.from("barberias").select("descuento_codigo,descuento_pct,descuento_meses").eq("id", b.id).maybeSingle();
+    setD(data as typeof d);
+  }, [b.id]);
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  async function aplicar(c: string) {
+    setOcupado(true);
+    setError("");
+    const { error: err } = await supabase.rpc("admin_aplicar_descuento", { p_barberia: b.id, p_codigo: c });
+    setOcupado(false);
+    if (err) return setError(err.message);
+    avisar(c ? "Descuento aplicado" : "Descuento quitado");
+    setCodigo("");
+    void cargar();
+    onListo();
+  }
+
+  return (
+    <div className="form-hoja" style={{ marginTop: 18 }}>
+      <h3 style={{ fontSize: 15 }}>Descuento</h3>
+      {d?.descuento_codigo ? (
+        <p className="suave">
+          <b className="num">{d.descuento_codigo}</b> · −{d.descuento_pct}% · quedan {d.descuento_meses} {d.descuento_meses === 1 ? "mes" : "meses"} con descuento.
+        </p>
+      ) : (
+        <p className="suave">Sin descuento. Paga el precio completo del plan.</p>
+      )}
+      <div className="fila-dos">
+        <label className="campo">
+          <span>Código</span>
+          <input value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())} maxLength={20} placeholder="Ej. AMIGO20" autoComplete="off" />
+        </label>
+        <button type="button" className="btn btn-borde btn-chico" style={{ alignSelf: "end" }} disabled={ocupado || !codigo} onClick={() => void aplicar(codigo)}>
+          Aplicar
+        </button>
+      </div>
+      {d?.descuento_codigo && (
+        <button type="button" className="btn btn-texto" disabled={ocupado} onClick={() => void aplicar("")}>
+          Quitar descuento
+        </button>
+      )}
+      {error && (
+        <p className="aviso error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -465,7 +513,6 @@ function Editar({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
   const avisar = useToast();
   const [nombre, setNombre] = useState(b.nombre);
   const [plan, setPlan] = useState<Plan>(b.plan);
-  const [precio, setPrecio] = useState(String(b.precio_mensual));
   const [vence, setVence] = useState(b.vence_el ?? "");
   const [gracia, setGracia] = useState(String(b.gracia_dias));
   const [suspendida, setSuspendida] = useState(b.estado === "suspendida");
@@ -476,9 +523,7 @@ function Editar({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
   const guardar = async (ev: FormEvent) => {
     ev.preventDefault();
     const g = Math.round(Number(gracia));
-    const p = Math.round(Number(precio));
     if (nombre.trim().length < 2) return setError("Escribe el nombre.");
-    if (!Number.isFinite(p) || p < 0) return setError("El precio no es válido.");
     if (!Number.isFinite(g) || g < 0 || g > 30) return setError("Los días de gracia deben ser entre 0 y 30.");
     setOcupado(true);
     setError("");
@@ -487,7 +532,6 @@ function Editar({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
       .update({
         nombre: nombre.trim(),
         plan,
-        precio_mensual: p,
         vence_el: vence || null,
         gracia_dias: g,
         estado: suspendida ? "suspendida" : "activa",
@@ -516,10 +560,11 @@ function Editar({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
             <option value="vip">VIP</option>
           </select>
         </label>
-        <label className="campo">
+        <div className="campo">
           <span>Precio al mes</span>
-          <input type="number" inputMode="numeric" min={0} value={precio} onChange={(e) => setPrecio(e.target.value)} required />
-        </label>
+          <b style={{ minHeight: 48, display: "flex", alignItems: "center" }}>{clp(b.precio_mensual)}</b>
+          <small>Sale del plan{b.precio_mensual !== 0 ? " y del descuento aplicado" : ""}. Se cambia en Planes.</small>
+        </div>
       </div>
       <div className="fila-dos">
         <label className="campo">
@@ -533,7 +578,7 @@ function Editar({ b, onListo }: { b: BarberiaAdmin; onListo: () => void }) {
       </div>
       <label className="campo">
         <span>Notas privadas</span>
-        <input value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={300} placeholder="Ej. precio fundador hasta mayo" />
+        <input value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={300} placeholder="Ej. cliente recomendado" />
       </label>
       <label className="interruptor">
         <input type="checkbox" checked={suspendida} onChange={(e) => setSuspendida(e.target.checked)} />

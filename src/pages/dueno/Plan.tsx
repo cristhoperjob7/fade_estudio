@@ -6,6 +6,8 @@ import { fechaLarga } from "../../lib/fecha";
 import { PLAN_LABEL } from "../../lib/types";
 import type { Plan } from "../../lib/types";
 import Hoja from "../../components/Hoja";
+import CodigoDescuento from "../../components/CodigoDescuento";
+import type { CodigoValido } from "../../components/CodigoDescuento";
 
 type PlanFila = { clave: Plan; nombre: string; precio_mensual: number; precio_anual: number };
 type Pendiente = { plan: Plan; ciclo: "mensual" | "anual"; creada_en: string } | null;
@@ -22,6 +24,7 @@ export default function PlanDueno() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [listo, setListo] = useState(false);
+  const [desc, setDesc] = useState<CodigoValido | null>(null);
 
   async function cargar() {
     const [a, b] = await Promise.all([supabase.rpc("planes_publicos"), supabase.rpc("mi_solicitud_plan")]);
@@ -40,7 +43,7 @@ export default function PlanDueno() {
     if (!elegido) return;
     setEnviando(true);
     setError("");
-    const { error: err } = await supabase.rpc("solicitar_cambio_plan", { p_plan: elegido, p_ciclo: ciclo });
+    const { error: err } = await supabase.rpc("solicitar_cambio_plan", { p_plan: elegido, p_ciclo: ciclo, p_codigo: desc?.codigo ?? null });
     setEnviando(false);
     if (err) return setError(err.message);
     setListo(true);
@@ -49,6 +52,7 @@ export default function PlanDueno() {
 
   function cerrar() {
     setElegido(null);
+    setDesc(null);
     setListo(false);
     setError("");
   }
@@ -147,6 +151,7 @@ export default function PlanDueno() {
                   {precio(elegidoFila)}
                 </p>
               </div>
+              <CodigoDescuento valor={desc} onCambio={setDesc} />
               {error && (
                 <p className="aviso error" role="alert">
                   {error}

@@ -22,6 +22,7 @@ import Resumen from "./pages/admin/Resumen";
 import Barberias from "./pages/admin/Barberias";
 import Solicitudes from "./pages/admin/Solicitudes";
 import Planes from "./pages/admin/Planes";
+import Descuentos from "./pages/admin/Descuentos";
 import Contratar from "./pages/Contratar";
 import { SLUG_DEFECTO } from "./lib/publico";
 
@@ -40,6 +41,7 @@ const PESTANAS_ADMIN: Pestana[] = [
   { ruta: "/admin/barberias", texto: "Barberías", icono: "shop" },
   { ruta: "/admin/solicitudes", texto: "Solicitudes", icono: "inbox" },
   { ruta: "/admin/planes", texto: "Planes", icono: "tag" },
+  { ruta: "/admin/descuentos", texto: "Descuentos", icono: "percent" },
   { ruta: "/admin/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
 const PESTANAS_BARBERO: Pestana[] = [
@@ -111,6 +113,7 @@ export default function App() {
           <Route path="barberias" element={<Barberias />} />
           <Route path="solicitudes" element={<Solicitudes />} />
           <Route path="planes" element={<Planes />} />
+          <Route path="descuentos" element={<Descuentos />} />
           <Route path="perfil" element={<Perfil />} />
         </Route>
       </Route>
