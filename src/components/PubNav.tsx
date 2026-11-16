@@ -9,19 +9,20 @@ export default function PubNav({ completa = false, inicio = false }: { completa?
   const rutas = useRutas();
   const propia = useMarcaPropia();
   const plantilla = useEsPlantilla();
+  const basico = datos?.plan === "basico";
   const navegar = useNavigate();
   const reloj = useRef<number | undefined>(undefined);
   const largo = useRef(false);
   const logo = datos?.plan !== "basico" ? urlPagina(datos?.pagina?.logo_path) : null;
 
-  // Plantilla Pro: sin botones de «Volver al inicio» ni «Ingresar». El acceso queda escondido:
+  // Plantillas Básico y Pro: sin botones de «Volver al inicio» ni «Ingresar». El acceso queda escondido:
   // mantener presionado el logo 1,5 segundos lleva al inicio de sesión.
-  if (plantilla) {
+  if (plantilla || basico) {
     const soltar = () => window.clearTimeout(reloj.current);
     return (
-      <header className="pb-nav pp-nav">
+      <header className={`pb-nav pp-nav${basico ? " pp-nav-fs" : ""}`}>
         <div className="pp-nav-in">
-          {inicio ? (
+          {inicio || basico ? (
             <span className="pp-nav-lado" aria-hidden="true" />
           ) : (
             <Link to={rutas.inicio} className="pp-nav-lado pp-atras" aria-label="Volver">
@@ -44,7 +45,7 @@ export default function PubNav({ completa = false, inicio = false }: { completa?
             onContextMenu={(e) => e.preventDefault()}
             onClick={(e) => largo.current && e.preventDefault()}
           >
-            {logo && !inicio ? <img src={logo} alt="" width={36} height={36} draggable={false} /> : null}
+            {basico ? <FadeMark size={32} /> : logo && !inicio ? <img src={logo} alt="" width={36} height={36} draggable={false} /> : null}
             <b>{aj.nombre}</b>
           </Link>
           <span className="pp-nav-lado" aria-hidden="true" />

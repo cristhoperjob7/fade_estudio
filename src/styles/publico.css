@@ -306,6 +306,9 @@
 .pp-marca { justify-content: center; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 .pp-marca img { width: 36px; height: 36px; }
 .pp-marca b { font: 400 14px var(--bask); letter-spacing: .28em; }
+.pp-nav-fs { background: rgba(8, 10, 16, .94); border-bottom: 0; }
+.pp-nav-fs .pp-marca { gap: 10px; }
+.pp-nav-fs .pp-marca b { font: 700 21px var(--alto); letter-spacing: .08em; text-transform: uppercase; }
 .pp .pb-btn-azul, .pp .pb-horas button.on { color: var(--on-acento); }
 .pp .pb-op, .pp .pb-horas button, .pp .pb-btn, .pp .pb-campo input { border-radius: 12px; }
 .pp .pb-op.on { background: color-mix(in srgb, var(--acento) 12%, var(--s1)); }
