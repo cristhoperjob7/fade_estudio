@@ -16,7 +16,7 @@ export type Pestana = { ruta: string; texto: string; icono: NombreIcono; abajo?:
  * barra superior con el nombre de la sección y el contenido. Las opciones dependen del perfil.
  */
 export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
-  const { perfil, esAdmin, cerrarSesion } = useAuth();
+  const { perfil, esAdmin, barberia: infoBarberia, cerrarSesion } = useAuth();
   const navegar = useNavigate();
   const { pathname } = useLocation();
   const [barberia, setBarberia] = useState("");
@@ -102,6 +102,7 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
   if (!perfil && !esAdmin) return null;
   const nombreMostrar = mio ? [mio.nombre, mio.apellidos].filter(Boolean).join(" ") : "";
   const rojo = !perfil;
+  const plan = (infoBarberia?.plan ?? "basico") as "basico" | "pro" | "vip";
   const titulo = perfil
     ? perfil.rol === "dueno"
       ? barberia || perfil.nombre
@@ -149,10 +150,10 @@ export default function Shell({ pestanas }: { pestanas: Pestana[] }) {
         </div>
 
         <Link to={rutaPerfil} className="lat-yo" aria-label="Mi perfil">
-          <Avatar iniciales={ini} foto={foto} rojo={rojo} />
+          <Avatar iniciales={ini} foto={foto} rojo={rojo} plan={plan} />
           <span className="quien">
             <b>{titulo}</b>
-            <span className={rojo ? "rol-rojo" : "rol-oro"}>{rolTexto}</span>
+            <span className={rojo ? "rol-rojo" : `rol-${plan}`}>{rolTexto}</span>
           </span>
         </Link>
 

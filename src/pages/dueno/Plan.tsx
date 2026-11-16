@@ -86,7 +86,7 @@ export default function PlanDueno() {
         <div className="tp-fila tp-cab" role="row">
           <span />
           {planes.map((p) => (
-            <b key={p.clave} className={p.clave === actual ? "actual" : ""} role="columnheader">
+            <b key={p.clave} className={`tp-${p.clave}${p.clave === actual ? " actual" : ""}`} role="columnheader">
               {p.nombre}
               {p.clave === actual && <small>Tu plan</small>}
             </b>

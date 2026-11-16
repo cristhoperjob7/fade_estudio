@@ -15,7 +15,8 @@ const ROL_TEXTO = { dueno: "Dueño", barbero: "Barbero", superadmin: "Superadmin
 /** «Mi perfil»: foto y datos personales. Sirve para Dueño, Barbero y Superadmin. */
 export default function Perfil() {
   const avisar = useToast();
-  const { perfil } = useAuth();
+  const { perfil, barberia: infoBarberia } = useAuth();
+  const plan = (infoBarberia?.plan ?? "basico") as "basico" | "pro" | "vip";
   const { datos, foto } = useMiPerfil();
   const archivo = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
@@ -88,11 +89,11 @@ export default function Perfil() {
   return (
     <>
       <div className="perfil-foto">
-        <Avatar iniciales={nombreCompleto ? iniciales(nombreCompleto) : "?"} foto={foto} rojo={rojo} grande />
+        <Avatar iniciales={nombreCompleto ? iniciales(nombreCompleto) : "?"} foto={foto} rojo={rojo} plan={plan} grande />
         <div style={{ textAlign: "center" }}>
           <b>{nombreCompleto || "Sin nombre"}</b>
           <div>
-            <span className={rojo ? "rol-rojo" : "rol-oro"}>{ROL_TEXTO[datos.rol] ?? "Superadmin"}</span>
+            <span className={rojo ? "rol-rojo" : `rol-${plan}`}>{ROL_TEXTO[datos.rol] ?? "Superadmin"}</span>
           </div>
         </div>
         <input ref={archivo} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={alElegir} />

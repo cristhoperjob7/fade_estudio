@@ -1,20 +1,23 @@
-/** Avatar con aro y corona. Dorado para Dueño y Barbero, rojo para el Superadmin. Muestra la foto si hay. */
+/** Avatar con aro y corona según plan (pro dorado, vip celeste, básico sin adorno), rojo para el Superadmin. Muestra la foto si hay. */
 export default function Avatar({
   iniciales,
   foto,
   rojo = false,
   grande = false,
   sencillo = false,
+  plan = "basico",
 }: {
   iniciales: string;
   foto?: string | null;
   rojo?: boolean;
   grande?: boolean;
   sencillo?: boolean;
+  /** Plan de la barbería: básico neutro, pro dorado, vip celeste. El superadmin usa `rojo`. */
+  plan?: "basico" | "pro" | "vip";
 }) {
   return (
-    <div className={`avatar${rojo ? " rojo" : ""}${grande ? " grande" : ""}${sencillo ? " sencillo" : ""}`} aria-hidden="true">
-      {!sencillo && <svg className="corona" viewBox="0 0 18 12" aria-hidden="true">
+    <div className={`avatar${rojo ? " rojo" : ""}${grande ? " grande" : ""}${sencillo ? " sencillo" : ""}${!rojo ? ` plan-${plan}` : ""}`} aria-hidden="true">
+      {!sencillo && (rojo || plan !== "basico") && <svg className="corona" viewBox="0 0 18 12" aria-hidden="true">
         <path d="M1 11L0 2l5 4 4-6 4 6 5-4-1 9z" />
       </svg>}
       {foto ? <img src={foto} alt="" draggable={false} /> : <span>{iniciales.slice(0, 2).toUpperCase()}</span>}
