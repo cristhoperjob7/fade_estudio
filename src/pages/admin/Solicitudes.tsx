@@ -19,6 +19,7 @@ export type Solicitud = {
   ciclo: "mensual" | "anual" | "prueba";
   estado: "nueva" | "contactada" | "creada" | "descartada";
   notas: string | null;
+  es_cambio?: boolean;
 };
 
 const ESTADOS: { v: Solicitud["estado"]; t: string }[] = [
@@ -84,7 +85,7 @@ export default function Solicitudes() {
               <span className="fila-cuerpo">
                 <b>{s.nombre_barberia}</b>
                 <small>
-                  {s.contacto} · {PLAN_LABEL[s.plan]} · {CICLO[s.ciclo]} · {hace(s.creada_en)}
+                  {s.es_cambio ? "Cambio de plan · " : ""}{s.contacto} · {PLAN_LABEL[s.plan]} · {CICLO[s.ciclo]} · {hace(s.creada_en)}
                 </small>
               </span>
               <span className={`chip sus-${s.estado === "nueva" ? "aviso" : s.estado === "creada" ? "ok" : "gris"}`}>
@@ -118,9 +119,15 @@ export default function Solicitudes() {
           >
             <Icon nombre="whatsapp" size={20} /> Escribir por WhatsApp
           </a>
-          <button className="btn btn-borde btn-ancho" style={{ marginTop: 10 }} onClick={() => crear(abierta)}>
-            <Icon nombre="shop" size={20} /> Crear la barbería con estos datos
-          </button>
+          {abierta.es_cambio ? (
+            <p className="suave" style={{ marginTop: 12 }}>
+              Es una barbería que ya está registrada. Cuando confirmes el pago, cambia su plan en Barberías.
+            </p>
+          ) : (
+            <button className="btn btn-borde btn-ancho" style={{ marginTop: 10 }} onClick={() => crear(abierta)}>
+              <Icon nombre="shop" size={20} /> Crear la barbería con estos datos
+            </button>
+          )}
           <h3 style={{ margin: "18px 0 8px" }}>Estado</h3>
           <div className="fila-dos">
             {ESTADOS.map((e) => (

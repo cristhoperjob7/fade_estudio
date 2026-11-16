@@ -70,17 +70,25 @@ export default function Equipo() {
       </ul>
       {gente && gente.length === 0 && <div className="vacio">Todavía no hay equipo.</div>}
 
-      {cupo?.limite != null && (
-        <p className={`cupo-linea${lleno ? " lleno" : ""}`}>
-          Barberos adicionales: <b>{cupo.usados} de {cupo.limite}</b>
-          {lleno && (
-            <>
-              {" · "}
-              <Link to="/contratar?plan=pro">Pasar a Pro para sumar más</Link>
-            </>
-          )}
-        </p>
-      )}
+      {cupo?.limite != null &&
+        (lleno ? (
+          <div className="aviso-cupo">
+            <div className="ic" aria-hidden="true">
+              <Icon nombre="users" size={22} />
+            </div>
+            <div className="texto">
+              <b>Llegaste al límite de tu plan</b>
+              <small>El plan Básico incluye 1 barbero adicional. Con Pro puedes agregar todos los que necesites.</small>
+            </div>
+            <Link to="/panel/plan" className="btn btn-primario btn-chico">
+              Pasar a Pro
+            </Link>
+          </div>
+        ) : (
+          <p className="cupo-linea">
+            Barberos adicionales: <b>{cupo.usados} de {cupo.limite}</b>
+          </p>
+        ))}
 
       <button className="btn btn-primario btn-ancho" style={{ marginTop: 14 }} disabled={lleno} onClick={() => setNuevo(true)}>
         <Icon nombre="users" size={20} />

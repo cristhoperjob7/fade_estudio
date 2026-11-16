@@ -12,6 +12,7 @@ import Ajustes from "./pages/dueno/Ajustes";
 import Reservas from "./pages/dueno/Reservas";
 import Agenda from "./pages/barbero/Agenda";
 import Historial from "./pages/Historial";
+import PlanDueno from "./pages/dueno/Plan";
 import AgendaGeneral from "./pages/dueno/AgendaGeneral";
 import Equipo from "./pages/dueno/Equipo";
 import Perfil from "./pages/Perfil";
@@ -30,6 +31,7 @@ const PESTANAS_DUENO: Pestana[] = [
   { ruta: "/panel/reservas", texto: "Reservas", icono: "receipt" },
   { ruta: "/panel/historial", texto: "Historial", icono: "clock" },
   { ruta: "/panel/equipo", texto: "Equipo", icono: "users" },
+  { ruta: "/panel/plan", texto: "Mi plan", icono: "tag" },
   { ruta: "/panel/ajustes", texto: "Ajustes", icono: "settings" },
   { ruta: "/panel/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
@@ -42,7 +44,6 @@ const PESTANAS_ADMIN: Pestana[] = [
 ];
 const PESTANAS_BARBERO: Pestana[] = [
   { ruta: "/panel/agenda", texto: "Agenda", icono: "cal" },
-  { ruta: "/panel/historial", texto: "Historial", icono: "clock" },
   { ruta: "/panel/perfil", texto: "Mi perfil", icono: "user", abajo: true },
 ];
 
@@ -79,6 +80,12 @@ function RequiereRol({ rol }: { rol: Rol }) {
   return <Outlet />;
 }
 
+/** Un solo panel para todos; las opciones del menú dependen del perfil. */
+function ShellPanel() {
+  const { perfil } = useAuth();
+  return <Shell pestanas={perfil?.rol === "dueno" ? PESTANAS_DUENO : PESTANAS_BARBERO} />;
+}
+
 function IrAlInicio() {
   const { perfil } = useAuth();
   return <Navigate to={perfil?.rol === "dueno" ? "/panel/inicio" : "/panel/agenda"} replace />;
@@ -111,24 +118,22 @@ export default function App() {
       <Route path="/panel" element={<RequiereSesion />}>
         <Route index element={<IrAlInicio />} />
 
-        <Route element={<RequiereRol rol="dueno" />}>
-          <Route element={<Shell pestanas={PESTANAS_DUENO} />}>
+        <Route element={<ShellPanel />}>
+          <Route path="perfil" element={<Perfil />} />
+
+          <Route element={<RequiereRol rol="dueno" />}>
             <Route path="inicio" element={<Inicio />} />
             <Route path="agenda-general" element={<AgendaGeneral />} />
             <Route path="reservas" element={<Reservas />} />
             <Route path="historial" element={<Historial />} />
             <Route path="equipo" element={<Equipo />} />
+            <Route path="plan" element={<PlanDueno />} />
             <Route path="ajustes" element={<Ajustes />} />
-            <Route path="perfil" element={<Perfil />} />
           </Route>
-        </Route>
 
-        <Route element={<RequiereRol rol="barbero" />}>
-          <Route element={<Shell pestanas={PESTANAS_BARBERO} />}>
+          <Route element={<RequiereRol rol="barbero" />}>
             <Route path="agenda" element={<Agenda />} />
-            <Route path="historial" element={<Historial />} />
             <Route path="cuenta" element={<Navigate to="/panel/perfil" replace />} />
-            <Route path="perfil" element={<Perfil />} />
           </Route>
         </Route>
       </Route>
