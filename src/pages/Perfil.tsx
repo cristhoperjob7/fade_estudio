@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import Avatar, { iniciales } from "../components/Avatar";
 import { FormularioClave } from "../components/CambiarClave";
+import AvisosPush from "../components/AvisosPush";
 import { useAuth } from "../lib/auth";
 import Ficha from "../components/Ficha";
 import { formatearTelefono } from "../lib/whatsapp";
 import Icon from "../components/Icon";
 import { useToast } from "../components/Toast";
 import { guardarDatos, quitarFoto, subirFoto, useMiPerfil } from "../lib/perfil";
-type Pestana = "datos" | "clave";
+type Pestana = "datos" | "clave" | "avisos";
 const ROL_TEXTO = { dueno: "Dueño", barbero: "Barbero", superadmin: "Superadmin" } as const;
 
 /** «Mi perfil»: foto y datos personales. Sirve para Dueño, Barbero y Superadmin. */
@@ -114,6 +115,11 @@ export default function Perfil() {
         <button role="tab" aria-selected={tab === "clave"} className={tab === "clave" ? "on" : ""} onClick={() => setTab("clave")}>
           Cambiar mi clave
         </button>
+        {rojo && (
+          <button role="tab" aria-selected={tab === "avisos"} className={tab === "avisos" ? "on" : ""} onClick={() => setTab("avisos")}>
+            Avisos
+          </button>
+        )}
       </div>
 
       {tab === "datos" ? (
@@ -153,6 +159,8 @@ export default function Perfil() {
           </div>
           <p className="suave chico">El correo es con el que entras y no se cambia aquí.</p>
         </Ficha>
+      ) : tab === "avisos" ? (
+        <AvisosPush para="admin" />
       ) : (
         <FormularioClave conTitulo={false} onListo={() => setTab("datos")} />
       )}

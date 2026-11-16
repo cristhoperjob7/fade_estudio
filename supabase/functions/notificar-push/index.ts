@@ -1,7 +1,8 @@
 // Edge Function: notificar-push
-// Manda un aviso push a los celulares del dueño.
-//  - Lo llama la base de datos (con el secreto x-webhook-secret) cuando llega un comprobante.
-//  - Lo llama el dueño desde Ajustes (con su sesión) para probar que funciona: { "prueba": true }.
+// Manda avisos push a los celulares.
+//  - La base de datos la llama (con el secreto x-webhook-secret) cuando llega un comprobante (aviso al dueño)
+//    o una solicitud de plan (aviso al superadmin).
+//  - El dueño o el superadmin la llaman desde su perfil, con su sesión, para probar: { "prueba": true }.
 // Subir con:  npx supabase functions deploy notificar-push --no-verify-jwt
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
@@ -45,10 +46,23 @@ Deno.serve(async (req) => {
   const cuerpo = await req.json().catch(() => ({}));
 
   let usuarios: string[];
-  let aviso: { titulo: string; cuerpo: string; etiqueta: string };
+  let aviso: { titulo: string; cuerpo: string; etiqueta: string; url: string };
 
   const secretoRecibido = req.headers.get("x-webhook-secret") ?? "";
   if (SECRETO && secretoRecibido && iguales(secretoRecibido, SECRETO)) {
+    const t = cuerpo as { tipo?: string; barberia?: string; plan?: string; ciclo?: string; es_cambio?: boolean; codigo?: string; solicitud_id?: string };
+    if (t.tipo === "solicitud") {
+      // Solicitud de plan nueva: se avisa a los superadmin.
+      const { data: sa } = await admin.from("superadmins").select("usuario_id");
+      usuarios = (sa ?? []).map((x: { usuario_id: string }) => x.usuario_id);
+      const plan = t.plan === "vip" ? "VIP" : t.plan === "pro" ? "Pro" : "Básico";
+      aviso = {
+        titulo: t.es_cambio ? "Pidieron cambiar de plan" : "Nueva solicitud de plan",
+        cuerpo: `${t.barberia ?? "Una barbería"} · ${plan} (${t.ciclo ?? ""})${t.codigo ? ` · código ${t.codigo}` : ""}`,
+        etiqueta: `solicitud-${t.solicitud_id ?? Date.now()}`,
+        url: "/admin/solicitudes",
+      };
+    } else {
     // Llamada de la base de datos: avisar solo a los dueños activos de ESA barbería.
     const c = cuerpo as { cita_id?: string; barberia_id?: string; cliente?: string; servicio?: string; fecha?: string; inicio_min?: number; monto?: number };
     if (!c.barberia_id) return json({ error: "Falta la barbería" }, 400);
@@ -65,16 +79,25 @@ Deno.serve(async (req) => {
         typeof c.inicio_min === "number" ? hm(c.inicio_min) : ""
       } · ${typeof c.monto === "number" ? clp(c.monto) : ""}`.replace(/\s+·\s*$/, "").trim(),
       etiqueta: `comprobante-${c.cita_id ?? Date.now()}`,
+      url: "/panel/reservas",
     };
+    }
   } else if ((cuerpo as { prueba?: boolean }).prueba === true) {
-    // Prueba hecha por el dueño desde Ajustes: solo a sus propios celulares.
+    // Prueba hecha desde el perfil: solo a sus propios celulares (dueño o superadmin).
     const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
     const { data: u } = await admin.auth.getUser(jwt);
     if (!u?.user) return json({ error: "Sesión no válida" }, 401);
     const { data: perfil } = await admin.from("perfiles").select("rol,activo").eq("id", u.user.id).maybeSingle();
-    if (!perfil || perfil.rol !== "dueno" || !perfil.activo) return json({ error: "Solo el dueño puede probar" }, 403);
+    const { data: sa } = await admin.from("superadmins").select("usuario_id").eq("usuario_id", u.user.id).maybeSingle();
+    const esDueno = !!perfil && perfil.rol === "dueno" && perfil.activo;
+    if (!esDueno && !sa) return json({ error: "Solo el dueño o el superadmin pueden probar" }, 403);
     usuarios = [u.user.id];
-    aviso = { titulo: "Los avisos funcionan", cuerpo: "Así te va a llegar cada comprobante nuevo.", etiqueta: "prueba" };
+    aviso = {
+      titulo: "Los avisos funcionan",
+      cuerpo: sa && !esDueno ? "Así te va a llegar cada solicitud nueva." : "Así te va a llegar cada comprobante nuevo.",
+      etiqueta: "prueba",
+      url: sa && !esDueno ? "/admin/solicitudes" : "/panel/reservas",
+    };
   } else {
     return json({ error: "No autorizado" }, 401);
   }
@@ -86,7 +109,7 @@ Deno.serve(async (req) => {
     .in("usuario_id", usuarios);
 
   webpush.setVapidDetails(VAPID_CONTACTO, VAPID_PUBLICA, VAPID_PRIVADA);
-  const mensaje = JSON.stringify({ ...aviso, url: "/panel/reservas" });
+  const mensaje = JSON.stringify(aviso);
   let enviados = 0;
   const caducadas: string[] = [];
 

@@ -14,7 +14,7 @@ const TEXTO: Record<EstadoPush, string> = {
 };
 
 /** Tarjeta de Ajustes para activar los avisos push en el celular que se está usando. */
-export default function AvisosPush() {
+export default function AvisosPush({ para = "dueno" }: { para?: "dueno" | "admin" }) {
   const avisar = useToast();
   const [estado, setEstado] = useState<EstadoPush | null>(null);
   const [trabajando, setTrabajando] = useState("");
@@ -41,7 +41,15 @@ export default function AvisosPush() {
   return (
     <section className="tarjeta" aria-labelledby="t-avisos">
       <h2 id="t-avisos">Avisos en este celular</h2>
-      <p className="suave">{estado ? TEXTO[estado] : "Revisando…"}</p>
+      <p className="suave">
+        {estado
+          ? para === "admin" && (estado === "inactivo" || estado === "activo")
+            ? estado === "activo"
+              ? "Avisos activados en este celular. Te llegará una notificación con cada solicitud de plan nueva."
+              : "Recibe un aviso en este celular cada vez que alguien pide un plan o un cambio de plan."
+            : TEXTO[estado]
+          : "Revisando…"}
+      </p>
       {estado === "inactivo" && (
         <button className="btn btn-primario" disabled={trabajando !== ""} onClick={() => correr("on", activarPush)}>
           {trabajando === "on" ? "Activando…" : "Activar avisos"}
