@@ -47,11 +47,11 @@ export default function Equipo() {
         </p>
       )}
 
-      <ul className="lista equipo">
+      <ul className="lista equipo-lista">
         {(gente ?? []).map((p) => (
           <li key={p.id}>
             <button className="fila fila-btn" onClick={() => setEditar(p)}>
-              <Avatar iniciales={p.iniciales} foto={urlFoto(p.avatar_path)} />
+              <Avatar sencillo iniciales={p.iniciales} foto={urlFoto(p.avatar_path)} />
               <span className="fila-cuerpo">
                 <b>
                   {p.nombre}
@@ -61,8 +61,9 @@ export default function Equipo() {
                   {ROL_LABEL[p.rol]} · {p.rol === "barbero" || p.atiende ? `${p.comision_pct}% comisión` : "No atiende"}
                 </small>
               </span>
-              {!p.activo && <span className="chip">Desactivado</span>}
-              {p.activo && p.atiende && <span className="chip azul">Atiende</span>}
+              <span className={`estado-eq${!p.activo ? " off" : p.atiende ? " on" : ""}`}>
+                {!p.activo ? "Desactivado" : p.atiende ? "Atiende" : "No atiende"}
+              </span>
             </button>
           </li>
         ))}
@@ -70,19 +71,15 @@ export default function Equipo() {
       {gente && gente.length === 0 && <div className="vacio">Todavía no hay equipo.</div>}
 
       {cupo?.limite != null && (
-        <div className={`cupo${lleno ? " lleno" : ""}`}>
-          <div>
-            <b>
-              {cupo.usados} de {cupo.limite} barbero adicional
-            </b>
-            <small>{lleno ? "Tu plan Básico ya usa su cupo. Con Pro puedes sumar más barberos." : "Tu plan Básico incluye 1 barbero además de ti."}</small>
-          </div>
+        <p className={`cupo-linea${lleno ? " lleno" : ""}`}>
+          Barberos adicionales: <b>{cupo.usados} de {cupo.limite}</b>
           {lleno && (
-            <Link to="/contratar?plan=pro" className="btn btn-borde btn-chico">
-              Ver plan Pro
-            </Link>
+            <>
+              {" · "}
+              <Link to="/contratar?plan=pro">Pasar a Pro para sumar más</Link>
+            </>
           )}
-        </div>
+        </p>
       )}
 
       <button className="btn btn-primario btn-ancho" style={{ marginTop: 14 }} disabled={lleno} onClick={() => setNuevo(true)}>

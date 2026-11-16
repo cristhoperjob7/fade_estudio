@@ -27,7 +27,11 @@ type Fila = {
 
 const CAMPOS =
   "id,codigo,servicio_nombre,precio,fecha,inicio_min,cliente_nombre,cliente_telefono,estado,comprobante_path,comprobante_en,comprobante_mime,comprobante_bytes,barbero:perfiles!barbero_id(nombre)";
+const CAMPOS_SP =
+  "id,codigo,servicio_nombre,precio,fecha,inicio_min,cliente_nombre,cliente_telefono,hold_hasta,barbero:perfiles!barbero_id(nombre)";
 const MOTIVOS = ["No llegó la transferencia", "El monto no coincide", "El comprobante no se ve bien"];
+
+type SinPagar = Omit<Fila, "estado" | "comprobante_path" | "comprobante_en" | "comprobante_mime" | "comprobante_bytes"> & { hold_hasta: string | null };
 
 const nombreBarbero = (b: Fila["barbero"]) => (Array.isArray(b) ? b[0]?.nombre : b?.nombre) ?? "—";
 const primerNombre = (n: string) => n.trim().split(/\s+/)[0] ?? n;
@@ -36,13 +40,16 @@ export default function Reservas() {
   const avisar = useToast();
   const [porRevisar, setPorRevisar] = useState<Fila[] | null>(null);
   const [confirmadas, setConfirmadas] = useState<Fila[]>([]);
+  const [sinPagar, setSinPagar] = useState<SinPagar[]>([]);
+  const [confirmar, setConfirmar] = useState("");
+  const [, setTic] = useState(0);
   const [error, setError] = useState("");
   const [sel, setSel] = useState<Fila | null>(null);
   const [aj, setAj] = useState({ direccion: "", tolerancia: 15 });
 
   const cargar = useCallback(async () => {
     const hoy = hoyChile();
-    const [a, b] = await Promise.all([
+    const [a, b, c] = await Promise.all([
       supabase.from("citas").select(CAMPOS).eq("estado", "por_revisar").order("fecha").order("inicio_min"),
       supabase
         .from("citas")
@@ -52,15 +59,32 @@ export default function Reservas() {
         .order("fecha")
         .order("inicio_min")
         .limit(40),
+      supabase.from("citas").select(CAMPOS_SP).eq("estado", "pendiente_pago").gt("hold_hasta", new Date().toISOString()).order("fecha").order("inicio_min"),
     ]);
-    if (a.error || b.error) {
+    if (a.error || b.error || c.error) {
       setError("No pudimos cargar las reservas. Revisa tu conexión.");
       return;
     }
     setError("");
     setPorRevisar((a.data ?? []) as unknown as Fila[]);
     setConfirmadas((b.data ?? []) as unknown as Fila[]);
+    setSinPagar((c.data ?? []) as unknown as SinPagar[]);
   }, []);
+
+  // Actualiza el tiempo que les queda a las reservas sin pagar.
+  useEffect(() => {
+    const id = window.setInterval(() => setTic((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  async function anular(c: SinPagar) {
+    if (confirmar !== c.id) return setConfirmar(c.id);
+    setConfirmar("");
+    const { error: err } = await supabase.from("citas").update({ estado: "cancelada", hold_hasta: null }).eq("id", c.id).eq("estado", "pendiente_pago");
+    if (err) return avisar("No pudimos anular la reserva. Inténtalo de nuevo.", "error");
+    avisar("Reserva anulada. La hora quedó libre.");
+    void cargar();
+  }
 
   useEffect(() => {
     void cargar();
@@ -114,6 +138,38 @@ export default function Reservas() {
             </li>
           ))}
         </ul>
+      )}
+
+      {sinPagar.length > 0 && (
+        <>
+          <h2 className="seccion">Sin pagar ({sinPagar.length})</h2>
+          <p className="suave">Clientes que reservaron y aún no suben el comprobante. La hora se libera sola al terminar el tiempo.</p>
+          <ul className="lista">
+            {sinPagar.map((c) => {
+              const min = c.hold_hasta ? Math.max(1, Math.ceil((new Date(c.hold_hasta).getTime() - Date.now()) / 60000)) : 0;
+              return (
+                <li key={c.id}>
+                  <div className="fila">
+                    <span className="hora num">{hm(c.inicio_min)}</span>
+                    <span className="fila-cuerpo">
+                      <b>{c.cliente_nombre}</b>
+                      <small>
+                        {fechaCorta(c.fecha)} · {c.servicio_nombre} · quedan {min} min
+                      </small>
+                    </span>
+                    <button
+                      className={`btn btn-chico ${confirmar === c.id ? "btn-primario peligro" : "btn-borde"}`}
+                      onClick={() => void anular(c)}
+                      onBlur={() => setConfirmar("")}
+                    >
+                      {confirmar === c.id ? "¿Seguro?" : "Anular"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       <h2 className="seccion">Confirmadas</h2>

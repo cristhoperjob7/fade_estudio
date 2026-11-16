@@ -509,3 +509,35 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
   .panel .contenido { padding: 30px 40px 60px; }
 }
 @media (prefers-reduced-motion: reduce) { .lateral, .lateral.abierto { transition: none; } .lat-fondo { animation: none; } }
+
+/* Avatar sencillo (listas): sin corona ni aro dorado */
+.avatar.sencillo { box-shadow: none; border: 1px solid var(--line); background: var(--s1); }
+.equipo-lista .fila { padding: 14px 4px; gap: 14px; }
+.estado-eq { font-size: 13px; color: var(--mut); display: inline-flex; align-items: center; gap: 7px; flex: none; }
+.estado-eq::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--mut); opacity: .5; }
+.estado-eq.on::before { background: #3ecf8e; opacity: 1; }
+.estado-eq.off { opacity: .7; }
+.cupo-linea { margin-top: 14px; color: var(--mut); font-size: 14px; }
+.cupo-linea b { color: var(--tx); font-weight: 600; }
+.cupo-linea a { color: var(--oro); }
+.cupo-linea.lleno b { color: var(--oro); }
+
+/* Historial */
+.hist-barra { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.hist-barra .periodo { flex: 1; text-align: center; font-weight: 600; font-size: 15px; }
+.hist-resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.hist-resumen div { padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--s1); }
+.hist-resumen small { display: block; color: var(--mut); font-size: 13px; }
+.hist-resumen b { font-size: 22px; font-weight: 600; }
+.hist-filtros { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
+.hist-filtros select { flex: 1; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--s1); }
+.hist-dia { border-bottom: 1px solid var(--line); }
+.hist-dia > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 14px 4px; cursor: pointer; }
+.hist-dia > summary::-webkit-details-marker { display: none; }
+.hist-dia > summary b { flex: 1; font-weight: 600; }
+.hist-dia > summary span { color: var(--mut); font-size: 14px; }
+.hist-dia > summary::after { content: "›"; color: var(--mut); font-size: 20px; transition: transform .2s; }
+.hist-dia[open] > summary::after { transform: rotate(90deg); }
+.hist-dia .fila:last-child { border-bottom: 0; }
+.hist-dia.vacio-dia > summary { opacity: .55; cursor: default; }
+.hist-dia.vacio-dia > summary::after { content: ""; }

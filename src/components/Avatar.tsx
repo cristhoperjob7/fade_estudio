@@ -4,17 +4,19 @@ export default function Avatar({
   foto,
   rojo = false,
   grande = false,
+  sencillo = false,
 }: {
   iniciales: string;
   foto?: string | null;
   rojo?: boolean;
   grande?: boolean;
+  sencillo?: boolean;
 }) {
   return (
-    <div className={`avatar${rojo ? " rojo" : ""}${grande ? " grande" : ""}`} aria-hidden="true">
-      <svg className="corona" viewBox="0 0 18 12" aria-hidden="true">
+    <div className={`avatar${rojo ? " rojo" : ""}${grande ? " grande" : ""}${sencillo ? " sencillo" : ""}`} aria-hidden="true">
+      {!sencillo && <svg className="corona" viewBox="0 0 18 12" aria-hidden="true">
         <path d="M1 11L0 2l5 4 4-6 4 6 5-4-1 9z" />
-      </svg>
+      </svg>}
       {foto ? <img src={foto} alt="" draggable={false} /> : <span>{iniciales.slice(0, 2).toUpperCase()}</span>}
     </div>
   );
