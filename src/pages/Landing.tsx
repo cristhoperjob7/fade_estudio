@@ -229,7 +229,7 @@ export default function Landing() {
           </div>
 
           <div className="lp-riel" ref={riel} role="list">
-            {PLANES_DEF.map((d, k) => {
+            {PLANES_DEF.map((d) => {
               const p = precios.find((x) => x.clave === d.clave);
               if (!p) return null;
               const ahorro = ahorroAnual(p);
