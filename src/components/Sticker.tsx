@@ -1,4 +1,5 @@
 import { DEFS, DIBUJOS } from "../lib/stickers";
+import "../styles/stickers.css";
 
 /** Se pone una sola vez en la página del chat: contiene los colores que usan los emoticones y los peones. */
 export function StickerDefs() {
@@ -9,13 +10,18 @@ export function StickerDefs() {
   );
 }
 
+/** Destellos que rodean a todos los emoticones VIP (se mueven aparte del dibujo). */
+const AURA_VIP =
+  '<path class="e-tw" style="transform-origin:3px 5px" d="M3 2.600l.7 1.900 1.900.7-1.900.7-.7 1.900-.7-1.900L.4 5.200l1.900-.7z" fill="#fff"/>' +
+  '<path class="e-tw" style="animation-delay:.7s;transform-origin:45px 42px" d="M45 39.400l.7 1.900 1.900.7-1.900.7-.7 1.900-.7-1.900-1.900-.7 1.900-.7z" fill="#ffe98a"/>';
+
 /** Emoticón animado del chat. La clave es «pack:nombre». */
-export default function Sticker({ clave, tam = 28 }: { clave: string; tam?: number }) {
+export default function Sticker({ clave, tam = 32 }: { clave: string; tam?: number }) {
   const [pack, nombre = ""] = clave.split(":");
   const dibujo = DIBUJOS[nombre];
-  if (!dibujo) return <span className="st-vacio" style={{ width: tam, height: tam }} />;
-  const brillo = pack === "vip" ? " glowvip" : pack === "pro" ? " glowpro" : "";
-  return <svg className={`st ov${brillo}`} viewBox="0 0 24 24" width={tam} height={tam} aria-hidden="true" focusable="false" dangerouslySetInnerHTML={{ __html: dibujo }} />;
+  if (!dibujo) return <span style={{ display: "inline-block", width: tam, height: tam }} />;
+  const clase = pack === "vip" ? " estk-vip" : pack === "pro" ? " estk-pro" : "";
+  return <svg className={`estk${clase}`} viewBox="0 0 48 48" width={tam} height={tam} aria-hidden="true" focusable="false" dangerouslySetInnerHTML={{ __html: dibujo + (pack === "vip" ? AURA_VIP : "") }} />;
 }
 
 const PAWN = '<circle cx="9" cy="5.2" r="3.7"/><path d="M5.3 9.6h7.4l-1 1.8c1.6 1 2.6 2.8 2.6 5H3.7c0-2.2 1-4 2.6-5z"/><rect x="2.6" y="17.2" width="12.8" height="2.8" rx="1.4"/>';

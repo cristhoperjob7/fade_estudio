@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
+import { ITEMS } from "./stickers";
 
 export type Sala = { clave: string; nombre: string };
 export type PlanChat = "basico" | "pro" | "vip";
@@ -38,9 +39,9 @@ const EVENTO_LEIDO = "fs-chat-leido";
 
 /** Packs de emoticones animados. Cada plan desbloquea los de su nivel y los anteriores. */
 export const PACKS: { clave: PlanChat; nombre: string; items: string[] }[] = [
-  { clave: "basico", nombre: "Principiante", items: ["sonrisa", "feliz", "triste", "serio", "asombro", "ojitos"] },
-  { clave: "pro", nombre: "Pro", items: ["risa", "guino", "enamorado", "cool", "llora", "enojo", "beso", "fiesta", "sorpresa", "sueno", "pensando", "rubor", "lengua", "miedo", "lol", "barba", "bigote", "peinado", "angel", "diablo"] },
-  { clave: "vip", nombre: "VIP", items: ["rey", "reina", "diamantes", "galaxia", "fuego", "hielo", "arcoiris", "millonario", "robot", "alien", "fantasma", "calavera", "oro", "rayo", "estrellas", "sol", "luna", "cyber", "vampiro", "mago"] },
+  { clave: "basico", nombre: "Principiante", items: ITEMS.basico },
+  { clave: "pro", nombre: "Pro", items: ITEMS.pro },
+  { clave: "vip", nombre: "VIP", items: ITEMS.vip },
 ];
 const NIVEL: Record<PlanChat, number> = { basico: 0, pro: 1, vip: 2 };
 export const puedeUsarPack = (plan: PlanChat, pack: PlanChat) => NIVEL[plan] >= NIVEL[pack];
@@ -57,13 +58,14 @@ export function useSalas(): Sala[] | null {
 const LIMITE = 80;
 
 /** Mensajes de una sala en vivo, con quiénes están conectados y el mensaje fijado. */
-export function useChat(sala: string, yo: Conectado | null, destinatario?: string) {
+export function useChat(sala: string | null, yo: Conectado | null, destinatario?: string) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [cargando, setCargando] = useState(true);
   const [conectados, setConectados] = useState<Conectado[]>([]);
   const [fijado, setFijado] = useState("");
 
   const cargarFijado = useCallback(async () => {
+    if (!sala) return;
     const { data } = await supabase.from("chat_fijados").select("texto").eq("sala", sala).maybeSingle();
     setFijado((data as { texto: string } | null)?.texto ?? "");
   }, [sala]);
@@ -75,9 +77,13 @@ export function useChat(sala: string, yo: Conectado | null, destinatario?: strin
 
   useEffect(() => {
     let vivo = true;
-    setCargando(true);
     setMensajes([]);
     setConectados([]);
+    if (!sala) {
+      setCargando(false);
+      return;
+    }
+    setCargando(true);
     void supabase
       .from("chat_mensajes")
       .select("*")
@@ -131,7 +137,7 @@ export function useChat(sala: string, yo: Conectado | null, destinatario?: strin
     async (texto: string, sticker: string | null): Promise<string> => {
       const { error } = destinatario
         ? await supabase.rpc("chat_enviar_privado", { p_destinatario: destinatario, p_texto: texto, p_sticker: sticker })
-        : await supabase.rpc("chat_enviar", { p_sala: sala, p_texto: texto, p_sticker: sticker });
+        : await supabase.rpc("chat_enviar", { p_sala: sala ?? "general", p_texto: texto, p_sticker: sticker });
       return error ? error.message : "";
     },
     [sala, destinatario],
