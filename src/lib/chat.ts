@@ -27,6 +27,8 @@ export type Conectado = {
   plan: PlanChat;
   barberia: string;
   avatar: string | null;
+  /** Si acepta mensajes privados (lo decide cada persona en Mi perfil → Chat). */
+  privados?: boolean;
 };
 export type Privado = Conectado & { sala: string; ultimo: string; ultimo_en: string; no_leidos: number };
 
@@ -36,9 +38,9 @@ const EVENTO_LEIDO = "fs-chat-leido";
 
 /** Packs de emoticones animados. Cada plan desbloquea los de su nivel y los anteriores. */
 export const PACKS: { clave: PlanChat; nombre: string; items: string[] }[] = [
-  { clave: "basico", nombre: "Básicos", items: ["risa", "mano", "tijera", "fuego"] },
-  { clave: "pro", nombre: "Pro", items: ["copa", "maquina", "dinero", "navaja"] },
-  { clave: "vip", nombre: "VIP", items: ["corona", "brillo", "diamante", "cohete"] },
+  { clave: "basico", nombre: "Principiante", items: ["sonrisa", "feliz", "triste", "serio", "asombro", "ojitos"] },
+  { clave: "pro", nombre: "Pro", items: ["risa", "guino", "enamorado", "cool", "llora", "enojo", "beso", "fiesta", "sorpresa", "sueno", "pensando", "rubor", "lengua", "miedo", "lol", "barba", "bigote", "peinado", "angel", "diablo"] },
+  { clave: "vip", nombre: "VIP", items: ["rey", "reina", "diamantes", "galaxia", "fuego", "hielo", "arcoiris", "millonario", "robot", "alien", "fantasma", "calavera", "oro", "rayo", "estrellas", "sol", "luna", "cyber", "vampiro", "mago"] },
 ];
 const NIVEL: Record<PlanChat, number> = { basico: 0, pro: 1, vip: 2 };
 export const puedeUsarPack = (plan: PlanChat, pack: PlanChat) => NIVEL[plan] >= NIVEL[pack];
@@ -212,4 +214,19 @@ export function useBloqueados() {
     return "";
   }, []);
   return { ids, cambiar };
+}
+
+/** Mi ajuste: ¿acepto mensajes privados? */
+export function useAjusteChat() {
+  const [privados, setPrivados] = useState<boolean | null>(null);
+  useEffect(() => {
+    void supabase.rpc("chat_mi_ajuste").then(({ data }) => setPrivados(data !== false));
+  }, []);
+  const guardar = useCallback(async (valor: boolean): Promise<string> => {
+    const { error } = await supabase.rpc("chat_guardar_ajuste", { p_privados: valor });
+    if (error) return error.message;
+    setPrivados(valor);
+    return "";
+  }, []);
+  return { privados, guardar };
 }

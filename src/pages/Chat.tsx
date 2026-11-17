@@ -4,10 +4,10 @@ import { Link } from "react-router-dom";
 import Avatar, { iniciales } from "../components/Avatar";
 import Hoja from "../components/Hoja";
 import Icon from "../components/Icon";
-import Sticker from "../components/Sticker";
+import Sticker, { Peon, StickerDefs } from "../components/Sticker";
 import { useToast } from "../components/Toast";
 import { useAuth } from "../lib/auth";
-import { PACKS, marcarLeido, puedeUsarPack, salaPrivada, useBloqueados, useChat, usePrivados, useSalas } from "../lib/chat";
+import { PACKS, marcarLeido, puedeUsarPack, salaPrivada, useAjusteChat, useBloqueados, useChat, usePrivados, useSalas } from "../lib/chat";
 import type { Conectado, Mensaje, PlanChat } from "../lib/chat";
 import { urlFoto, useMiPerfil } from "../lib/perfil";
 
@@ -17,17 +17,14 @@ function claseNombre(m: Mensaje): string {
   if (m.autor_rol === "superadmin") return "cn-sa";
   return m.autor_plan === "vip" ? "cn-vip" : m.autor_plan === "pro" ? "cn-pro" : "cn-bas";
 }
-function insignia(m: Mensaje): string {
-  if (m.autor_rol === "superadmin") return "SUPERADMIN";
-  return m.autor_plan === "vip" ? "VIP" : m.autor_plan === "pro" ? "PRO" : "";
-}
-
 const GRUPOS: { clave: string; titulo: string; es: (c: Conectado) => boolean }[] = [
-  { clave: "sa", titulo: "Administración", es: (c) => c.rol === "superadmin" },
-  { clave: "vip", titulo: "VIP", es: (c) => c.rol !== "superadmin" && c.plan === "vip" },
-  { clave: "pro", titulo: "Pro", es: (c) => c.rol !== "superadmin" && c.plan === "pro" },
-  { clave: "bas", titulo: "Barberos", es: (c) => c.rol !== "superadmin" && c.plan !== "vip" && c.plan !== "pro" },
+  { clave: "sa", titulo: "ADM", es: (c) => c.rol === "superadmin" },
+  { clave: "vip", titulo: "Barbero VIP", es: (c) => c.rol !== "superadmin" && c.plan === "vip" },
+  { clave: "pro", titulo: "Barbero Pro", es: (c) => c.rol !== "superadmin" && c.plan === "pro" },
+  { clave: "bas", titulo: "Barbero Principiante", es: (c) => c.rol !== "superadmin" && c.plan !== "vip" && c.plan !== "pro" },
 ];
+const tipoPeon = (c: Conectado): "sa" | "pro" | "vip" | "bas" => (c.rol === "superadmin" ? "sa" : c.plan === "vip" ? "vip" : c.plan === "pro" ? "pro" : "bas");
+const etiquetaGrupo = (c: Conectado) => (c.rol === "superadmin" ? "ADM" : c.plan === "vip" ? "Barbero VIP" : c.plan === "pro" ? "Barbero Pro" : "Barbero Principiante");
 const claseC = (c: Conectado) => (c.rol === "superadmin" ? "cn-sa" : c.plan === "vip" ? "cn-vip" : c.plan === "pro" ? "cn-pro" : "cn-bas");
 
 /** Chat de barberos: una sala general y una por comuna, en vivo. */
@@ -45,6 +42,8 @@ export default function Chat() {
   const [miembros, setMiembros] = useState(false);
   const priv = usePrivados(miId);
   const bloq = useBloqueados();
+  const ajuste = useAjusteChat();
+  const [ficha, setFicha] = useState<Conectado | null>(null);
   const yo = useMemo<Conectado | null>(
     () =>
       miId && mio
@@ -55,12 +54,13 @@ export default function Chat() {
             plan: miPlan,
             barberia: soyAdmin ? "" : (barberia?.nombre ?? ""),
             avatar: mio.avatar_path ?? null,
+            privados: ajuste.privados !== false,
           }
         : null,
-    [miId, mio, soyAdmin, perfil?.rol, miPlan, barberia?.nombre],
+    [miId, mio, soyAdmin, perfil?.rol, miPlan, barberia?.nombre, ajuste.privados],
   );
   const salaActual = vista === "dm" && dm && miId ? salaPrivada(miId, dm.id) : sala;
-  const { mensajes, cargando, conectados, enLinea, fijado, enviar, borrar, silenciar, fijar } = useChat(salaActual, yo, vista === "dm" ? dm?.id : undefined);
+  const { mensajes, cargando, conectados, enLinea, fijado, enviar, borrar, fijar } = useChat(salaActual, yo, vista === "dm" ? dm?.id : undefined);
   const enDm = vista === "dm" && !!dm;
   const bloqueado = !!dm && bloq.ids.includes(dm.id);
   const [texto, setTexto] = useState("");
@@ -96,8 +96,8 @@ export default function Chat() {
         <section key={g.clave}>
           <h3>{g.titulo} <span>{g.gente.length}</span></h3>
           {g.gente.map((c) => (
-            <button key={c.id} type="button" className="chat-miem" disabled={c.id === miId} onClick={() => abrirPrivado(c)} title={c.id === miId ? "Tú" : "Escribir en privado"}>
-              <Avatar sencillo iniciales={iniciales(c.nombre)} foto={urlFoto(c.avatar)} rojo={c.rol === "superadmin"} plan={c.plan} />
+            <button key={c.id} type="button" className="chat-miem" onClick={() => { setMiembros(false); setFicha(c); }}>
+              <Peon tipo={tipoPeon(c)} retraso={(c.nombre.length * 3) % 7} />
               <span className="chat-miem-t">
                 <b className={claseC(c)}>{c.nombre}{c.id === miId ? " (tú)" : ""}</b>
                 {c.rol !== "superadmin" && c.barberia && <small>{c.barberia}</small>}
@@ -132,6 +132,7 @@ export default function Chat() {
 
   return (
     <div className="chat">
+      <StickerDefs />
       <div className="chat-cab">
         <div className="chat-tit">
           {vista !== "sala" && (
@@ -255,7 +256,6 @@ export default function Chat() {
           const previo = mensajes.slice(0, i).reverse().find((x) => !x.borrado);
           const seguido = previo && previo.autor_id === m.autor_id && new Date(m.creado_en).getTime() - new Date(previo.creado_en).getTime() < 180000;
           const mio = m.autor_id === miId;
-          const ins = insignia(m);
           return (
             <div key={m.id} className={`chat-msg${seguido ? " seguido" : ""}${m.autor_plan === "vip" && m.autor_rol !== "superadmin" ? " vipmsg" : ""}`}>
               <div className="chat-av">
@@ -266,7 +266,6 @@ export default function Chat() {
                   <div className="chat-nom">
                     <span className={claseNombre(m)}>{m.autor_nombre}</span>
                     {m.autor_rol !== "superadmin" && m.autor_barberia && <small>{m.autor_barberia}</small>}
-                    {ins && <em className={`chat-ins ins-${ins.toLowerCase()}`}>{ins}</em>}
                     <time>{hora(m.creado_en)}</time>
                   </div>
                 )}
@@ -274,7 +273,7 @@ export default function Chat() {
                   {m.texto && <span>{m.texto}</span>}
                   {m.sticker && (
                     <span className="chat-sticker">
-                      <Sticker clave={m.sticker} tam={56} />
+                      <Sticker clave={m.sticker} tam={32} />
                     </span>
                   )}
                 </div>
@@ -289,17 +288,6 @@ export default function Chat() {
                       <button type="button" onClick={() => { void borrar(m.id); setMenu(null); }}>
                         Borrar mensaje
                       </button>
-                      {soyAdmin && !mio && !enDm && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void silenciar(m.autor_id, 60).then((e2) => avisar(e2 || `${m.autor_nombre} silenciado por 1 hora`, e2 ? "error" : undefined));
-                            setMenu(null);
-                          }}
-                        >
-                          Silenciar 1 hora
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
@@ -333,7 +321,7 @@ export default function Chat() {
                     aria-label={n}
                     onClick={() => (libre ? void mandar("", `${pack}:${n}`) : avisar(`Estos emoticones son del plan ${pack === "pro" ? "Pro" : "VIP"}.`, "error"))}
                   >
-                    <Sticker clave={`${pack}:${n}`} tam={36} />
+                    <Sticker clave={`${pack}:${n}`} tam={32} />
                   </button>
                 );
               })}
@@ -355,6 +343,27 @@ export default function Chat() {
       </div>
       {vista === "sala" && <aside className="chat-lat">{lateral}</aside>}
       </div>
+      )}
+      {ficha && (
+        <Hoja titulo={ficha.nombre} onCerrar={() => setFicha(null)}>
+          <div className="chat-ficha">
+            <Avatar iniciales={iniciales(ficha.nombre)} foto={urlFoto(ficha.avatar)} rojo={ficha.rol === "superadmin"} plan={ficha.plan} grande />
+            <h3 className={claseC(ficha)}>{ficha.nombre}</h3>
+            <p className="chat-ficha-rol">
+              <Peon tipo={tipoPeon(ficha)} /> {etiquetaGrupo(ficha)}
+            </p>
+            {ficha.rol !== "superadmin" && ficha.barberia && <p className="suave">{ficha.barberia}</p>}
+            {ficha.id === miId ? (
+              <p className="suave">Este eres tú.</p>
+            ) : ficha.privados === false && !soyAdmin ? (
+              <p className="chat-aviso">{ficha.nombre} tiene desactivados los mensajes privados.</p>
+            ) : (
+              <button type="button" className="btn btn-primario" onClick={() => { abrirPrivado(ficha); setFicha(null); }}>
+                Iniciar chat privado
+              </button>
+            )}
+          </div>
+        </Hoja>
       )}
       {miembros && (
         <Hoja titulo="Conectados" onCerrar={() => setMiembros(false)}>

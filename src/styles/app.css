@@ -831,42 +831,53 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
 .chat-enviar { background: var(--btn, #2563EB); color: #fff; }
 .chat-enviar:disabled { opacity: .4; cursor: default; }
 .chat-emo:focus-visible, .chat-enviar:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-.chat-panel { position: absolute; left: 8px; bottom: calc(100% + 8px); z-index: 6; width: min(340px, calc(100vw - 36px)); background: #14171f; border: 1px solid #2c3350; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, .65); padding: 10px; animation: sel-sube .18s ease-out both; }
+.chat-panel { position: absolute; left: 8px; bottom: calc(100% + 8px); z-index: 6; width: min(330px, calc(100vw - 36px)); background: #14171f; border: 1px solid #2c3350; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, .65); padding: 10px; animation: sel-sube .18s ease-out both; }
 .chat-packs { display: flex; gap: 6px; margin-bottom: 10px; }
 .chat-packs button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 99px; font-size: 12.5px; font-weight: 700; color: var(--mut); border: 1px solid var(--line); }
 .chat-packs button.on { color: var(--tx); background: var(--s2); border-color: #3a4260; }
-.chat-stickers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.chat-stickers button { all: unset; cursor: pointer; height: 56px; display: grid; place-items: center; border-radius: 12px; background: #171a21; border: 1px solid #2a2e38; }
+.chat-stickers { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 232px; overflow-y: auto; }
+.chat-stickers button { all: unset; cursor: pointer; height: 44px; display: grid; place-items: center; border-radius: 12px; background: #171a21; border: 1px solid #2a2e38; }
 .chat-stickers button:hover { border-color: #4a5a8c; }
 .chat-stickers button.bloq { opacity: .38; }
 .chat-nota { margin-top: 8px; font-size: 12.5px; color: var(--mut); }
 
-/* Emoticones animados */
-.st-anim { display: block; transform-origin: 50% 60%; }
-.st-risa { animation: st-rebota 1.4s ease-in-out infinite; }
-.st-mano { animation: st-saluda 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
-.st-tijera { animation: st-corta 1.1s ease-in-out infinite; }
-.st-fuego { animation: st-llama .9s ease-in-out infinite; transform-origin: 50% 100%; }
-.st-copa { animation: st-brilla 1.8s ease-in-out infinite; }
-.st-maquina { animation: st-vibra .35s linear infinite; }
-.st-dinero { animation: st-gira 2.2s linear infinite; }
-.st-navaja { animation: st-columpia 1.6s ease-in-out infinite; transform-origin: 20% 80%; }
-.st-corona { animation: st-flota 2s ease-in-out infinite; }
-.st-brillo { animation: st-destello 1.6s ease-in-out infinite; }
-.st-diamante { animation: st-brilla 1.4s ease-in-out infinite; }
-.st-cohete { animation: st-despega 1.3s ease-in-out infinite; }
-@keyframes st-rebota { 50% { transform: translateY(-14%) scale(1.06); } }
-@keyframes st-saluda { 25% { transform: rotate(-14deg); } 75% { transform: rotate(14deg); } }
-@keyframes st-corta { 50% { transform: scaleX(.78) rotate(-6deg); } }
-@keyframes st-llama { 30% { transform: scale(.92, 1.1); } 60% { transform: scale(1.05, .94); } }
-@keyframes st-brilla { 50% { transform: scale(1.1); filter: drop-shadow(0 0 5px currentColor) brightness(1.25); } }
-@keyframes st-vibra { 25% { transform: translateX(-4%); } 75% { transform: translateX(4%); } }
-@keyframes st-gira { to { transform: rotateY(360deg); } }
-@keyframes st-columpia { 50% { transform: rotate(-16deg); } }
-@keyframes st-flota { 50% { transform: translateY(-10%) rotate(-4deg); } }
-@keyframes st-destello { 50% { transform: rotate(90deg) scale(1.15); opacity: .75; } }
-@keyframes st-despega { 50% { transform: translate(6%, -10%); } }
-@media (prefers-reduced-motion: reduce) { .st-anim, .chat-panel { animation: none; } }
+/* Emoticones animados (caritas) y peones */
+.st { display: block; }
+svg.st { overflow: visible; }
+
+.ov *{transform-box:view-box}
+.a-bounce{animation:bounce .7s ease-in-out infinite}@keyframes bounce{50%{transform:translateY(-1.6px)}}
+.a-beat{transform-box:fill-box;transform-origin:center;animation:beat .8s ease-in-out infinite}@keyframes beat{50%{transform:scale(1.35)}}
+.a-blink{transform-box:fill-box;transform-origin:center;animation:blink 2.4s infinite}@keyframes blink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.a-tear{animation:tear 1.2s ease-in infinite}@keyframes tear{0%{transform:translateY(-1px);opacity:0}30%{opacity:1}100%{transform:translateY(5px);opacity:0}}
+.a-shake{animation:shake .35s linear infinite}@keyframes shake{25%{transform:translateX(-.8px)}75%{transform:translateX(.8px)}}
+.a-float{animation:float 1.6s ease-out infinite}@keyframes float{0%{transform:translateY(4px);opacity:0}30%{opacity:1}100%{transform:translateY(-5px);opacity:0}}
+.a-tw{transform-box:fill-box;transform-origin:center;animation:tw 1.3s ease-in-out infinite}@keyframes tw{0%,100%{transform:scale(.2);opacity:.2}50%{transform:scale(1.15);opacity:1}}
+.a-spin{transform-box:fill-box;transform-origin:center;animation:spin 3.5s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.a-pulse{transform-box:fill-box;transform-origin:center;animation:pulse 1s ease-in-out infinite}@keyframes pulse{50%{transform:scale(1.14)}}
+.a-hue{animation:hue 3s linear infinite}@keyframes hue{to{filter:hue-rotate(360deg)}}
+.a-shiver{animation:shiver .22s linear infinite}@keyframes shiver{50%{transform:translate(.5px,-.5px)}}
+.a-flick{transform-box:fill-box;transform-origin:50% 100%;animation:flick .45s ease-in-out infinite alternate}@keyframes flick{to{transform:scale(.92,1.1)}}
+.a-snip1{transform-origin:12px 12px;animation:sn1 .9s ease-in-out infinite}.a-snip2{transform-origin:12px 12px;animation:sn2 .9s ease-in-out infinite}
+@keyframes sn1{50%{transform:rotate(9deg)}}@keyframes sn2{50%{transform:rotate(-9deg)}}
+.a-stripe{animation:stripe 1s linear infinite}@keyframes stripe{to{transform:translateY(5.6px)}}
+.a-rise{animation:rise 1.5s ease-in infinite}@keyframes rise{0%{transform:translateY(2px);opacity:0}40%{opacity:1}100%{transform:translateY(-6px);opacity:0}}
+.a-vib{animation:vib .12s linear infinite}@keyframes vib{50%{transform:translateX(.6px)}}
+.a-fly{animation:fly 1.2s ease-in-out infinite}@keyframes fly{50%{transform:translateY(-2px) rotate(2deg)}}
+.a-flash{animation:flash 1.1s steps(1) infinite}@keyframes flash{0%,60%{opacity:1}30%,45%{opacity:.35}}
+.a-pop{animation:pop 1.8s ease-out infinite}@keyframes pop{0%,35%{transform:translate(0,0);opacity:1}70%{transform:translate(3px,-8px) rotate(40deg);opacity:0}100%{opacity:0}}
+.a-sh{animation:sh 2.2s linear infinite}@keyframes sh{0%{transform:translateX(-14px)}60%,100%{transform:translateX(16px)}}
+.a-wig{transform-origin:12px 20px;animation:wig 1s ease-in-out infinite}@keyframes wig{50%{transform:rotate(7deg)}}
+.glowvip{animation:gv 2s ease-in-out infinite}@keyframes gv{0%,100%{filter:drop-shadow(0 0 1px #8fe3ff)}50%{filter:drop-shadow(0 0 4px #b58cff)}}
+.glowpro{animation:gp 2.4s ease-in-out infinite}@keyframes gp{0%,100%{filter:drop-shadow(0 0 0 #f5c542)}50%{filter:drop-shadow(0 0 3px #f5c542)}}
+
+.peon{display:block}
+.peon-sa{animation:pg-r 1.8s ease-in-out infinite}.peon-pro{animation:pg-o 2.2s ease-in-out infinite}.peon-vip{animation:pg-v 2.4s ease-in-out infinite}
+@keyframes pg-r{50%{filter:drop-shadow(0 0 5px #ff3b3b) drop-shadow(0 0 9px #ff3b3b88)}0%,100%{filter:drop-shadow(0 0 1.5px #ff3b3b)}}
+@keyframes pg-o{50%{filter:drop-shadow(0 0 5px #ffc400) drop-shadow(0 0 9px #ffc40088)}0%,100%{filter:drop-shadow(0 0 1.5px #ffc400)}}
+@keyframes pg-v{0%,100%{filter:drop-shadow(0 0 3px #8fe3ff)}50%{filter:drop-shadow(0 0 7px #b58cff) drop-shadow(0 0 10px #8fe3ff88)}}
+.st-vacio { display: inline-block; }
+@media (prefers-reduced-motion: reduce) { .st, .peon, .chat-panel, .st * { animation: none !important; } }
 
 /* Chat: conectados por rol y privados */
 .chat-tit { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -902,3 +913,10 @@ a.avatar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 6p
 .chat-fila-d { display: grid; justify-items: end; gap: 4px; }
 .chat-fila-d time { color: #6b7385; font-size: 11.5px; }
 .chat-bloq { margin: 0; border-radius: 0 0 18px 18px; text-align: center; }
+
+.chat-ficha { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 6px 0 4px; }
+.chat-ficha h3 { margin: 4px 0 0; font-size: 20px; }
+.chat-ficha-rol { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 13.5px; color: var(--mut); font-weight: 600; }
+.chat-ficha .btn { margin-top: 10px; width: 100%; max-width: 280px; }
+.chat-miem .peon { flex: none; margin: 0 6px; }
+.chat-ajuste { max-width: 560px; }
