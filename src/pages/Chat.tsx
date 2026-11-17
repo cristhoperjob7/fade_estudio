@@ -7,8 +7,8 @@ import Icon from "../components/Icon";
 import Sticker, { Peon, StickerDefs } from "../components/Sticker";
 import { useToast } from "../components/Toast";
 import { useAuth } from "../lib/auth";
-import { PACKS, marcarLeido, puedeUsarPack, salaPrivada, useAjusteChat, useBloqueados, useChat, useNoLeidos, usePrivados } from "../lib/chat";
-import type { Conectado, PlanChat } from "../lib/chat";
+import { COMANDOS, PACKS, baneoChat, comandoChat, listarSancionados, marcarLeido, puedeUsarPack, salaPrivada, silenciarChat, useAjusteChat, useBloqueados, useChat, useEstadoChat, useNoLeidos, usePrivados } from "../lib/chat";
+import type { Conectado, PlanChat, Sancionados } from "../lib/chat";
 import { urlFoto, useMiPerfil } from "../lib/perfil";
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Santiago" });
@@ -40,10 +40,72 @@ const VENTA: Record<"pro" | "vip", { titulo: string; lineas: string[] }> = {
   },
 };
 
-/** Entrada: el chat solo se abre (y apareces conectado) cuando tocas «Entrar». */
+const CLAVE_DENTRO = "fs_chat_dentro";
+const estabaDentro = (id?: string) => {
+  try {
+    return !!id && sessionStorage.getItem(CLAVE_DENTRO) === id;
+  } catch {
+    return false;
+  }
+};
+const marcarDentro = (id: string | undefined, dentro: boolean) => {
+  try {
+    if (dentro && id) sessionStorage.setItem(CLAVE_DENTRO, id);
+    else sessionStorage.removeItem(CLAVE_DENTRO);
+  } catch {
+    /* sin almacenamiento: solo no recordará la entrada */
+  }
+};
+
+/** Entrada: el chat solo se abre (y apareces conectado) cuando tocas «Entrar». Si cambias de menú y vuelves, sigues dentro hasta que toques «Salir». */
 export default function Chat() {
-  const [dentro, setDentro] = useState(false);
-  return dentro ? <Sala onSalir={() => setDentro(false)} /> : <Portada onEntrar={() => setDentro(true)} />;
+  const { sesion, esAdmin, perfil } = useAuth();
+  const avisar = useToast();
+  const miId = sesion?.user.id;
+  const [dentro, setDentro] = useState(() => estabaDentro(miId));
+  const est = useEstadoChat(true);
+  const base = useRef<number | null | undefined>(undefined);
+  const entrar = () => {
+    marcarDentro(miId, true);
+    setDentro(true);
+  };
+  const salir = () => {
+    marcarDentro(miId, false);
+    setDentro(false);
+  };
+
+  // Si un administrador te saca (!kick), vuelves a la portada.
+  useEffect(() => {
+    if (!est.listo) return;
+    if (base.current === undefined) {
+      base.current = est.expulsadoDesde;
+      return;
+    }
+    if (est.expulsadoDesde !== base.current) {
+      base.current = est.expulsadoDesde;
+      if (dentro) {
+        salir();
+        avisar("Un administrador te sacó del chat", "error");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [est.listo, est.expulsadoDesde]);
+
+  if (est.baneado && !(esAdmin && !perfil)) return <Baneado motivo={est.motivo} />;
+  return dentro ? <Sala onSalir={salir} est={est} /> : <Portada onEntrar={entrar} />;
+}
+
+function Baneado({ motivo }: { motivo: string }) {
+  return (
+    <div className="chat-portada chat-baneado">
+      <div className="chat-portada-ico">
+        <Icon nombre="lock" size={34} />
+      </div>
+      <h1 className="titulo">Estás baneado del chat</h1>
+      <p className="suave">Un administrador te quitó el acceso al chat de barberos. El resto del sistema sigue funcionando normal.</p>
+      {motivo && <p className="chat-portada-aviso">Motivo: {motivo}</p>}
+    </div>
+  );
 }
 
 function Portada({ onEntrar }: { onEntrar: () => void }) {
@@ -73,7 +135,7 @@ function Portada({ onEntrar }: { onEntrar: () => void }) {
   );
 }
 
-function Sala({ onSalir }: { onSalir: () => void }) {
+function Sala({ onSalir, est }: { onSalir: () => void; est: ReturnType<typeof useEstadoChat> }) {
   const { sesion, esAdmin, perfil, barberia } = useAuth();
   const avisar = useToast();
   const miId = sesion?.user.id;
@@ -121,6 +183,13 @@ function Sala({ onSalir }: { onSalir: () => void }) {
   const [miembros, setMiembros] = useState(false);
   const [historial, setHistorial] = useState(false);
   const [ficha, setFicha] = useState<Conectado | null>(null);
+  const [stickerSel, setStickerSel] = useState<string | null>(null);
+  const [menuCab, setMenuCab] = useState(false);
+  const [moderando, setModerando] = useState(false);
+  const [sanc, setSanc] = useState<Sancionados | null>(null);
+  const [sistema, setSistema] = useState<{ id: number; texto: string }[]>([]);
+  const [pendiente, setPendiente] = useState<{ linea: string; texto: string } | null>(null);
+  const entradaRef = useRef<HTMLInputElement>(null);
   const lista = useRef<HTMLDivElement>(null);
   const abajo = useRef(true);
   const bloqueado = !!dm && bloq.ids.includes(dm.id);
@@ -172,13 +241,60 @@ function Sala({ onSalir }: { onSalir: () => void }) {
     setOcupado(false);
     if (motivo) return avisar(motivo, "error");
     abajo.current = true;
-    if (sticker) setPanel(false);
-    else setTexto("");
+    setTexto("");
+    setStickerSel(null);
+    setPanel(false);
   }
+
+  function decir(texto: string) {
+    setSistema((l) => [...l.slice(-9), { id: Date.now() + Math.random(), texto }]);
+    abajo.current = true;
+  }
+  async function correr(linea: string, confirmar: boolean) {
+    setOcupado(true);
+    const r = await comandoChat(linea, confirmar);
+    setOcupado(false);
+    if (r.confirmar) {
+      setPendiente({ linea, texto: r.texto });
+      return;
+    }
+    setPendiente(null);
+    decir(r.texto);
+    if (r.ok && moderando) void listarSancionados().then(setSanc);
+  }
+  const esComando = soyAdmin && !enDm && texto.trimStart().startsWith("!");
   const alEnviar = (e: FormEvent) => {
     e.preventDefault();
-    if (texto.trim()) void mandar(texto.trim(), null);
+    if (esComando) {
+      const l = texto.trim();
+      setTexto("");
+      setPanel(false);
+      void correr(l, false);
+      return;
+    }
+    if (texto.trim() || stickerSel) void mandar(texto.trim(), stickerSel);
   };
+  const sugerencias = (() => {
+    if (!esComando) return [];
+    const t = texto.trimStart().toLowerCase();
+    if (!/^![a-z]{2,}$/.test(t)) return [];
+    return COMANDOS.filter((c) => c.c.startsWith(t) && c.c !== t);
+  })();
+  const congeladoParaMi = est.congelado && !soyAdmin && !enDm;
+
+  async function abrirModeracion() {
+    setMenuCab(false);
+    setModerando(true);
+    setSanc(await listarSancionados());
+  }
+  async function moderar(accion: () => Promise<string | null>, ok: string) {
+    const m = await accion();
+    avisar(m || ok, m ? "error" : undefined);
+    if (!m) setSanc(await listarSancionados());
+  }
+  useEffect(() => {
+    if (ficha && soyAdmin) void listarSancionados().then(setSanc);
+  }, [ficha, soyAdmin]);
 
   // ---- Lista de conectados: en el global todos; en un privado, solo quienes están en esa conversación ----
   const conectadosGlobal = global.conectados;
@@ -225,39 +341,84 @@ function Sala({ onSalir }: { onSalir: () => void }) {
   return (
     <div className="chat">
       <StickerDefs />
+      <div className="chat-tabs" role="tablist" aria-label="Conversaciones">
+        <button type="button" role="tab" aria-selected={!enDm} className={`chat-tab${!enDm ? " on" : ""}`} onClick={() => cambiarA("global")}>
+          # Global
+        </button>
+        {abiertos.map((c) => {
+          const n = priv.lista.find((p) => p.id === c.id)?.no_leidos ?? 0;
+          return (
+            <div key={c.id} className={`chat-tab${activa === c.id ? " on" : ""}`}>
+              <button type="button" role="tab" aria-selected={activa === c.id} onClick={() => cambiarA(c.id)}>
+                <b className={claseC(c)}>{c.nombre}</b>
+                {n > 0 && activa !== c.id && <em className="chat-no-leidos">{n}</em>}
+              </button>
+              <button type="button" className="x" aria-label={`Cerrar chat con ${c.nombre}`} onClick={() => cerrar(c)}>
+                ×
+              </button>
+            </div>
+          );
+        })}
+        <button type="button" className="chat-tab chat-tab-mas" aria-label="Mis conversaciones privadas" onClick={() => setHistorial(true)}>
+          +
+        </button>
+      </div>
+
       <div className="chat-cab">
         <div className="chat-tit">
-          <div>
-            <h1 className="titulo">{enDm ? dm!.nombre : "# Chat global"}</h1>
-            <p className="suave">
-              {enDm ? (
-                `${etiquetaGrupo(dm!)}${dm!.rol !== "superadmin" && dm!.barberia ? ` · ${dm!.barberia}` : ""}`
-              ) : (
+          <h1 className="chat-h">{enDm ? dm!.nombre : "# Chat global"}</h1>
+          <p className="suave">
+            {enDm ? (
+              `${etiquetaGrupo(dm!)}${dm!.rol !== "superadmin" && dm!.barberia ? ` · ${dm!.barberia}` : ""}`
+            ) : (
+              <>
+                <i className="chat-punto" /> {conectadosGlobal.length} {conectadosGlobal.length === 1 ? "conectado" : "conectados"}
+                {est.lento > 0 && <> · lento {est.lento} s</>}
+                {est.congelado && <> · congelado</>}
+              </>
+            )}
+          </p>
+        </div>
+        <button type="button" className="chat-ib chat-btn-miem" aria-label="Ver conectados" onClick={() => setMiembros(true)}>
+          <Icon nombre="users" size={20} />
+        </button>
+        <button type="button" className="chat-ib" aria-label="Más opciones" aria-expanded={menuCab} onClick={() => setMenuCab(!menuCab)}>
+          <Icon nombre="mas3" size={20} />
+        </button>
+        {menuCab && (
+          <>
+            <div className="chat-menu2-fondo" onClick={() => setMenuCab(false)} />
+            <div className="chat-menu2" role="menu">
+              {!enDm && soyAdmin && (
+                <button type="button" role="menuitem" onClick={() => { setMenuCab(false); setBorradorFijo(global.fijado); setEditandoFijo(!editandoFijo); }}>
+                  {global.fijado ? "Editar aviso fijado" : "Fijar aviso"}
+                </button>
+              )}
+              {soyAdmin && (
+                <button type="button" role="menuitem" onClick={() => void abrirModeracion()}>
+                  Moderación
+                </button>
+              )}
+              {enDm && (
                 <>
-                  <i className="chat-punto" /> {conectadosGlobal.length} {conectadosGlobal.length === 1 ? "conectado" : "conectados"}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => { setMenuCab(false); void bloq.cambiar(dm!.id, !bloqueado).then((m) => avisar(m || (bloqueado ? "Desbloqueado" : "Bloqueado"), m ? "error" : undefined)); }}
+                  >
+                    {bloqueado ? "Desbloquear" : "Bloquear"}
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => { setMenuCab(false); cerrar(dm!); }}>
+                    Cerrar esta conversación
+                  </button>
                 </>
               )}
-            </p>
-          </div>
-        </div>
-        <div className="chat-acciones">
-          {enDm && (
-            <button type="button" className="btn btn-borde btn-chico" onClick={() => void bloq.cambiar(dm!.id, !bloqueado).then((m) => avisar(m || (bloqueado ? "Desbloqueado" : "Bloqueado"), m ? "error" : undefined))}>
-              {bloqueado ? "Desbloquear" : "Bloquear"}
-            </button>
-          )}
-          {!enDm && soyAdmin && (
-            <button type="button" className="btn btn-borde btn-chico" onClick={() => { setBorradorFijo(global.fijado); setEditandoFijo(!editandoFijo); }}>
-              {global.fijado ? "Editar fijado" : "Fijar aviso"}
-            </button>
-          )}
-          <button type="button" className="btn btn-borde btn-chico chat-btn-miem" onClick={() => setMiembros(true)}>
-            Conectados
-          </button>
-          <button type="button" className="btn btn-borde btn-chico" onClick={onSalir}>
-            Salir
-          </button>
-        </div>
+              <button type="button" role="menuitem" className="mal" onClick={() => { setMenuCab(false); onSalir(); }}>
+                Salir del chat
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {!enDm && editandoFijo && (
@@ -298,6 +459,13 @@ function Sala({ onSalir }: { onSalir: () => void }) {
             {!actual.cargando && mensajes.filter((m) => !m.borrado).length === 0 && <p className="chat-vacio">{enDm ? `Escríbele a ${dm!.nombre}.` : "Aún no hay mensajes. ¡Escribe el primero!"}</p>}
             {mensajes.map((m, i) => {
               if (m.borrado) return null;
+              if (m.anuncio) {
+                return (
+                  <div key={m.id} className="chat-anuncio" role="note">
+                    <b>ADM</b> {m.texto}
+                  </div>
+                );
+              }
               const mioMsg = m.autor_id === miId;
               const cuerpo = (
                 <div className="chat-txt">
@@ -351,29 +519,16 @@ function Sala({ onSalir }: { onSalir: () => void }) {
                 </div>
               );
             })}
-          </div>
-
-          <div className="chat-tabs" role="tablist" aria-label="Conversaciones">
-            <button type="button" role="tab" aria-selected={!enDm} className={`chat-tab${!enDm ? " on" : ""}`} onClick={() => cambiarA("global")}>
-              # Global
-            </button>
-            {abiertos.map((c) => {
-              const n = priv.lista.find((p) => p.id === c.id)?.no_leidos ?? 0;
-              return (
-                <div key={c.id} className={`chat-tab${activa === c.id ? " on" : ""}`}>
-                  <button type="button" role="tab" aria-selected={activa === c.id} onClick={() => cambiarA(c.id)}>
-                    <b className={claseC(c)}>{c.nombre}</b>
-                    {n > 0 && activa !== c.id && <em className="chat-no-leidos">{n}</em>}
-                  </button>
-                  <button type="button" className="x" aria-label={`Cerrar chat con ${c.nombre}`} onClick={() => cerrar(c)}>
+            {!enDm &&
+              sistema.map((x) => (
+                <div key={x.id} className="chat-sistema">
+                  <small>Solo tú ves esto</small>
+                  <pre>{x.texto}</pre>
+                  <button type="button" aria-label="Ocultar" onClick={() => setSistema((l) => l.filter((y) => y.id !== x.id))}>
                     ×
                   </button>
                 </div>
-              );
-            })}
-            <button type="button" className="chat-tab chat-tab-mas" aria-label="Mis conversaciones privadas" onClick={() => setHistorial(true)}>
-              +
-            </button>
+              ))}
           </div>
 
           {enDm && bloqueado ? (
@@ -396,7 +551,7 @@ function Sala({ onSalir }: { onSalir: () => void }) {
                         type="button"
                         className={libre ? "" : "bloq"}
                         aria-label={n}
-                        onClick={() => (libre ? void mandar("", `${pack}:${n}`) : avisar(pack === "vip" ? "Este emoticón es VIP. ¡Pásate a VIP para usarlo!" : "Este emoticón es del plan Pro.", "error"))}
+                        onClick={() => (libre ? (setStickerSel(`${pack}:${n}`), setPanel(false), entradaRef.current?.focus()) : avisar(pack === "vip" ? "Este emoticón es VIP. ¡Pásate a VIP para usarlo!" : "Este emoticón es del plan Pro.", "error"))}
                       >
                         <Sticker clave={`${pack}:${n}`} tam={34} />
                         {!libre && <i className="cand" aria-hidden="true"><Icon nombre="lock" size={11} /></i>}
@@ -422,12 +577,53 @@ function Sala({ onSalir }: { onSalir: () => void }) {
                   )}
                 </div>
               )}
+              {pendiente && (
+                <div className="chat-confirma" role="alertdialog">
+                  <span>{pendiente.texto}</span>
+                  <div>
+                    <button type="button" className="btn btn-chico" onClick={() => setPendiente(null)}>
+                      Cancelar
+                    </button>
+                    <button type="button" className="btn btn-primario btn-chico peligro" disabled={ocupado} onClick={() => void correr(pendiente.linea, true)}>
+                      Confirmar
+                    </button>
+                  </div>
+                </div>
+              )}
+              {sugerencias.length > 0 && (
+                <div className="chat-sug" role="listbox" aria-label="Comandos">
+                  {sugerencias.map((c) => (
+                    <button key={c.c} type="button" role="option" onClick={() => { setTexto(c.c + " "); entradaRef.current?.focus(); }}>
+                      <b>{c.uso}</b>
+                      <small>{c.que}</small>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {congeladoParaMi && <p className="chat-nota-c">El chat está congelado por un administrador. Vuelve a intentar en un rato.</p>}
               <form className="chat-form" onSubmit={alEnviar}>
                 <button type="button" className="chat-emo" aria-label="Emoticones" aria-expanded={panel} onClick={() => setPanel(!panel)}>
                   <Icon nombre="smile" size={22} />
                 </button>
-                <input value={texto} maxLength={500} onChange={(e) => setTexto(e.target.value)} placeholder={enDm ? `Mensaje privado a ${dm!.nombre}…` : "Escribe un mensaje…"} aria-label="Mensaje" autoComplete="off" />
-                <button className="chat-enviar" disabled={ocupado || !texto.trim()} aria-label="Enviar">
+                {stickerSel && (
+                  <span className="chat-chip">
+                    <Sticker clave={stickerSel} tam={28} />
+                    <button type="button" aria-label="Quitar emoticón" onClick={() => setStickerSel(null)}>
+                      ×
+                    </button>
+                  </span>
+                )}
+                <input
+                  ref={entradaRef}
+                  value={texto}
+                  maxLength={500}
+                  disabled={congeladoParaMi}
+                  onChange={(e) => setTexto(e.target.value)}
+                  placeholder={enDm ? `Mensaje privado a ${dm!.nombre}…` : soyAdmin ? "Escribe un mensaje o un comando (!ayuda)…" : "Escribe un mensaje…"}
+                  aria-label="Mensaje"
+                  autoComplete="off"
+                />
+                <button className="chat-enviar" disabled={ocupado || congeladoParaMi || (!texto.trim() && !stickerSel)} aria-label="Enviar">
                   <Icon nombre="send" size={20} />
                 </button>
               </form>
@@ -446,6 +642,34 @@ function Sala({ onSalir }: { onSalir: () => void }) {
               <Peon tipo={tipoPeon(ficha)} /> {etiquetaGrupo(ficha)}
             </p>
             {ficha.rol !== "superadmin" && ficha.barberia && <p className="suave">{ficha.barberia}</p>}
+            {soyAdmin && ficha.id !== miId && (
+              <div className="chat-mod">
+                <small>Moderación</small>
+                <div>
+                  {[[10, "10 min"], [60, "1 hora"], [1440, "1 día"]].map(([m, t]) => (
+                    <button key={m} type="button" className="btn btn-borde btn-chico" onClick={() => void moderar(() => silenciarChat(ficha.id, m as number), `${ficha.nombre} silenciado ${t}`)}>
+                      Silenciar {t}
+                    </button>
+                  ))}
+                </div>
+                <div>
+                  {sanc?.silenciados.some((x) => x.id === ficha.id) && (
+                    <button type="button" className="btn btn-borde btn-chico" onClick={() => void moderar(() => silenciarChat(ficha.id, 0), "Ya puede escribir")}>
+                      Quitar silencio
+                    </button>
+                  )}
+                  {sanc?.baneados.some((x) => x.id === ficha.id) ? (
+                    <button type="button" className="btn btn-borde btn-chico" onClick={() => void moderar(() => baneoChat(ficha.id, false), "Desbaneado")}>
+                      Quitar baneo
+                    </button>
+                  ) : (
+                    <button type="button" className="btn btn-primario btn-chico peligro" onClick={() => void moderar(() => baneoChat(ficha.id, true), `${ficha.nombre} baneado`)}>
+                      Banear
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             {ficha.id === miId ? (
               <p className="suave">Este eres tú.</p>
             ) : ficha.privados === false && !soyAdmin ? (
@@ -461,6 +685,39 @@ function Sala({ onSalir }: { onSalir: () => void }) {
       {miembros && (
         <Hoja titulo="Conectados" onCerrar={() => setMiembros(false)}>
           {lateral}
+        </Hoja>
+      )}
+      {moderando && (
+        <Hoja titulo="Moderación" onCerrar={() => setModerando(false)}>
+          <div className="chat-bandeja">
+            <h3 className="chat-mod-t">Silenciados</h3>
+            {sanc && sanc.silenciados.length === 0 && <p className="chat-vacio">Nadie silenciado.</p>}
+            {sanc?.silenciados.map((x) => (
+              <div key={x.id} className="chat-fila">
+                <span className="chat-fila-t">
+                  <b>{x.nombre}</b>
+                  <small>Hasta las {hora(x.hasta)}</small>
+                </span>
+                <button type="button" className="btn btn-borde btn-chico" onClick={() => void moderar(() => silenciarChat(x.id, 0), "Ya puede escribir")}>
+                  Quitar
+                </button>
+              </div>
+            ))}
+            <h3 className="chat-mod-t">Baneados</h3>
+            {sanc && sanc.baneados.length === 0 && <p className="chat-vacio">Nadie baneado.</p>}
+            {sanc?.baneados.map((x) => (
+              <div key={x.id} className="chat-fila">
+                <span className="chat-fila-t">
+                  <b>{x.nombre}</b>
+                  <small>{x.motivo || "Sin motivo"}</small>
+                </span>
+                <button type="button" className="btn btn-borde btn-chico" onClick={() => void moderar(() => baneoChat(x.id, false), "Desbaneado")}>
+                  Quitar
+                </button>
+              </div>
+            ))}
+            <p className="suave chat-lat-nota">También puedes usar comandos: escribe !ayuda en el chat.</p>
+          </div>
         </Hoja>
       )}
       {historial && (

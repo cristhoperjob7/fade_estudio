@@ -7,6 +7,10 @@ import "./styles/publico.css";
 import App from "./App";
 import { AuthProvider } from "./lib/auth";
 import { ToastProvider } from "./components/Toast";
+import { iniciarHaptica } from "./lib/haptica";
+import "./lib/instalar";
+
+iniciarHaptica();
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>

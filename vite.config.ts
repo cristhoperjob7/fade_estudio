@@ -15,7 +15,7 @@ export default defineConfig({
         short_name: "Fade Studio",
         description: "Agenda y reservas de la barbería",
         lang: "es-CL",
-        start_url: "/",
+        start_url: "/panel",
         scope: "/",
         display: "standalone",
         orientation: "portrait",

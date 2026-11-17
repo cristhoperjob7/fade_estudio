@@ -1,0 +1,52 @@
+FADE STUDIO · COMANDOS DEL CHAT (solo superadmin)
+==================================================
+Escríbelos en la caja de mensaje del "# Chat global".
+- Solo tú ves las respuestas (aparecen en un cuadro azul con borde punteado).
+- A los demás nunca se les envía el comando. Si otra persona lo intenta, el servidor lo rechaza.
+- Al escribir "!" y 2 letras, el chat te sugiere los comandos que empiezan igual.
+- Para nombrar a alguien usa @ + su nombre, sin tildes ni espacios. Ejemplo: @matias
+  Si hay varios con ese nombre, te muestra cuáles y escribes más letras (@matiasperez).
+- Los comandos con (*) piden confirmación antes de ejecutarse.
+
+LIMPIEZA
+--------
+!cls (*)                    Borra TODOS los mensajes del chat global y deja "Chat limpiado por ADM".
+!cls 20 (*)                 Borra los últimos 20 mensajes.
+!cls @nombre (*)            Borra todos los mensajes de esa persona.
+
+SANCIONES
+---------
+!silenciar @nombre 30       Silencia a la persona 30 minutos (si no pones minutos, son 10).
+!voz @nombre                Le quita el silencio.
+!ban @nombre motivo (*)     Banea: no ve el chat ni puede escribir. Ve "Estás baneado del chat" y el motivo.
+!unban @nombre              Quita el baneo.
+!kick @nombre               La saca del chat (vuelve a la portada). Puede volver a entrar.
+!sancionados                Lista de silenciados y baneados.
+
+CONTROL DE LA SALA
+------------------
+!fijar texto                Fija un aviso arriba del chat.
+!desfijar                   Quita el aviso fijado.
+!anuncio texto              Publica un mensaje destacado de ADM para todos.
+!lento 10                   Modo lento: 10 segundos entre mensajes por persona (!lento 0 lo apaga).
+!congelar                   Solo escribe ADM. Sirve para emergencias.
+!abrir                      Reabre el chat después de !congelar.
+
+INFORMACION
+-----------
+!info @nombre               Barbería, plan, rol y estado de la persona.
+!estado                     Si el chat está congelado, modo lento, cuántos silenciados y baneados.
+!registro                   Últimas 10 acciones de moderación (quién, qué y cuándo).
+!ayuda                      Lista corta de comandos.
+
+TAMBIEN SIN COMANDOS
+--------------------
+- Toca el nombre de alguien (lista de Conectados) y verás botones: Silenciar 10 min / 1 hora / 1 día,
+  Quitar silencio, Banear y Quitar baneo.
+- Menú ⋯ del chat → "Moderación": lista de silenciados y baneados con botón Quitar.
+
+NOTAS
+-----
+- Los mensajes borrados con !cls quedan marcados como borrados en la base de datos (no se pierden del todo).
+- Tú (ADM) no te afecta el modo lento ni el chat congelado.
+- Los chats privados nunca se borran con !cls: son solo entre las dos personas.

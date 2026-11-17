@@ -18,6 +18,8 @@ export type Mensaje = {
   borrado: boolean;
   creado_en: string;
   destinatario_id?: string | null;
+  /** Mensaje destacado del administrador (anuncio o «chat limpiado»). */
+  anuncio?: boolean;
 };
 
 /** Persona conectada (o con la que tengo un chat privado). */
@@ -238,3 +240,75 @@ export function useAjusteChat() {
   }, []);
   return { privados, guardar };
 }
+
+/** Estado general del chat para mí: baneo, sala congelada, modo lento y expulsión. Se revisa cada pocos segundos. */
+export type EstadoChat = { baneado: boolean; motivo: string; congelado: boolean; lento: number; expulsadoDesde: number | null };
+export function useEstadoChat(activo = true) {
+  const [est, setEst] = useState<EstadoChat>({ baneado: false, motivo: "", congelado: false, lento: 0, expulsadoDesde: null });
+  const [listo, setListo] = useState(false);
+  useEffect(() => {
+    if (!activo) return;
+    let vivo = true;
+    const leer = () =>
+      void supabase.rpc("chat_mi_estado").then(({ data }) => {
+        if (!vivo || !data) return;
+        const d = data as { baneado: boolean; motivo: string; congelado: boolean; lento: number; expulsado_desde: number | null };
+        setEst({ baneado: !!d.baneado, motivo: d.motivo ?? "", congelado: !!d.congelado, lento: d.lento ?? 0, expulsadoDesde: d.expulsado_desde });
+        setListo(true);
+      });
+    leer();
+    const t = window.setInterval(leer, 10000);
+    return () => {
+      vivo = false;
+      window.clearInterval(t);
+    };
+  }, [activo]);
+  return { ...est, listo };
+}
+
+export type RespuestaComando = { ok: boolean; texto: string; confirmar?: boolean };
+/** Solo el superadmin: el servidor valida; a cualquier otra persona le responde «No autorizado». */
+export async function comandoChat(linea: string, confirmar = false): Promise<RespuestaComando> {
+  const { data, error } = await supabase.rpc("chat_comando", { p_linea: linea, p_confirmar: confirmar });
+  if (error) return { ok: false, texto: error.message };
+  return data as RespuestaComando;
+}
+
+export type Sancionados = {
+  silenciados: { id: string; nombre: string; hasta: string }[];
+  baneados: { id: string; nombre: string; motivo: string }[];
+};
+export async function listarSancionados(): Promise<Sancionados> {
+  const { data } = await supabase.rpc("chat_sancionados");
+  const d = (data as Sancionados | null) ?? { silenciados: [], baneados: [] };
+  return { silenciados: d.silenciados ?? [], baneados: d.baneados ?? [] };
+}
+export async function baneoChat(id: string, banear: boolean, motivo = ""): Promise<string | null> {
+  const { error } = await supabase.rpc("chat_baneo", { p_usuario: id, p_banear: banear, p_motivo: motivo });
+  return error ? error.message : null;
+}
+export async function silenciarChat(id: string, minutos: number): Promise<string | null> {
+  const { error } = await supabase.rpc("chat_silenciar", { p_usuario: id, p_minutos: minutos });
+  return error ? error.message : null;
+}
+
+/** Comandos que se sugieren al escribir «!» + 2 letras (solo superadmin). */
+export const COMANDOS: { c: string; uso: string; que: string }[] = [
+  { c: "!ayuda", uso: "!ayuda", que: "Lista de comandos" },
+  { c: "!cls", uso: "!cls · !cls 20 · !cls @nombre", que: "Limpia el chat" },
+  { c: "!silenciar", uso: "!silenciar @nombre min", que: "Silencia a alguien" },
+  { c: "!voz", uso: "!voz @nombre", que: "Quita el silencio" },
+  { c: "!ban", uso: "!ban @nombre motivo", que: "Banea del chat" },
+  { c: "!unban", uso: "!unban @nombre", que: "Quita el baneo" },
+  { c: "!kick", uso: "!kick @nombre", que: "Saca del chat" },
+  { c: "!sancionados", uso: "!sancionados", que: "Silenciados y baneados" },
+  { c: "!info", uso: "!info @nombre", que: "Datos de la persona" },
+  { c: "!fijar", uso: "!fijar texto", que: "Fija un aviso" },
+  { c: "!desfijar", uso: "!desfijar", que: "Quita el aviso fijado" },
+  { c: "!anuncio", uso: "!anuncio texto", que: "Mensaje destacado" },
+  { c: "!lento", uso: "!lento seg", que: "Modo lento (0 lo apaga)" },
+  { c: "!congelar", uso: "!congelar", que: "Solo escribe ADM" },
+  { c: "!abrir", uso: "!abrir", que: "Reabre el chat" },
+  { c: "!estado", uso: "!estado", que: "Estado del chat" },
+  { c: "!registro", uso: "!registro", que: "Últimas acciones" },
+];

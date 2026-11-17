@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { configurado } from "../lib/supabase";
+import { useInstalar } from "../lib/instalar";
 import FadeLogo from "../components/FadeLogo";
 import Cartel, { Tira } from "../components/Cartel";
 
@@ -13,6 +14,7 @@ export default function Login() {
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const app = useInstalar();
 
   useEffect(() => {
     if (esAdmin) navegar("/admin", { replace: true });
@@ -92,6 +94,16 @@ export default function Login() {
             </form>
           )}
 
+          {app.estado === "listo" && (
+            <button type="button" className="btn btn-borde btn-ancho instalar-app" onClick={() => void app.instalar()}>
+              Instalar app
+            </button>
+          )}
+          {app.estado === "ios" && (
+            <p className="instalar-ios">
+              Para instalar la app: toca <b>Compartir</b> y luego <b>Agregar a inicio</b>.
+            </p>
+          )}
           <p className="acceso-pie">¿Problemas para entrar? Pídele tu clave al dueño de tu barbería o escríbenos.</p>
           <Link to="/" className="enlace-volver">
             Volver al inicio

@@ -10,6 +10,7 @@ import Icon from "../components/Icon";
 import Pestanitas from "../components/Pestanitas";
 import { useToast } from "../components/Toast";
 import { useAjusteChat } from "../lib/chat";
+import { hapticaDisponible, useHaptica } from "../lib/haptica";
 import { guardarDatos, quitarFoto, subirFoto, useMiPerfil } from "../lib/perfil";
 type Pestana = "datos" | "clave" | "chat" | "avisos";
 const ROL_TEXTO = { dueno: "Dueño", barbero: "Barbero", superadmin: "Superadmin" } as const;
@@ -24,6 +25,7 @@ export default function Perfil() {
   const [subiendo, setSubiendo] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const ajusteChat = useAjusteChat();
+  const [hapOn, setHap] = useHaptica();
   const [tab, setTab] = useState<Pestana>("datos");
   const [f, setF] = useState({ nombre: "", apellidos: "", telefono: "", edad: "" });
 
@@ -119,7 +121,7 @@ export default function Perfil() {
         opciones={[
           { valor: "datos", etiqueta: "Mis datos" },
           { valor: "clave", etiqueta: "Cambiar mi clave" },
-          { valor: "chat" as Pestana, etiqueta: "Chat" },
+          { valor: "chat" as Pestana, etiqueta: "Ajustes" },
           ...(rojo ? [{ valor: "avisos" as Pestana, etiqueta: "Avisos" }] : []),
         ]}
       />
@@ -174,6 +176,13 @@ export default function Perfil() {
             <span>
               <b>Recibir mensajes privados</b>
               <small>Si lo apagas, nadie podrá iniciarte un chat privado desde el chat de barberos.</small>
+            </span>
+          </label>
+          <label className="interruptor">
+            <input type="checkbox" checked={hapOn} onChange={(e) => setHap(e.target.checked)} />
+            <span>
+              <b>Vibración suave</b>
+              <small>{hapticaDisponible() ? "Un toque corto al presionar botones y confirmar acciones. Sin sonido." : "Este aparato no permite vibración desde el navegador (por ejemplo, iPhone)."}</small>
             </span>
           </label>
         </div>

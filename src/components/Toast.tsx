@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { vibrar } from "../lib/haptica";
 
 type Avisar = (mensaje: string, tipo?: "ok" | "error") => void;
 const Ctx = createContext<Avisar>(() => undefined);
@@ -10,6 +11,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const avisar = useCallback<Avisar>((texto, tipo = "ok") => {
     setMsg({ texto, tipo });
+    vibrar(tipo === "error" ? "error" : "ok");
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setMsg(null), 3200);
   }, []);

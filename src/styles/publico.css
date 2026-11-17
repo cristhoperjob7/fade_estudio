@@ -172,7 +172,7 @@
 .pb-campo input:focus { border-color: var(--gold); outline: none; }
 .pb-campo small { font-size: 12px; }
 
-.pb-pago-cab { background: var(--blue); padding: 22px 22px 18px; display: grid; gap: 2px; }
+.pb-pago-cab { background: var(--blue); color: var(--on-acento, #fff); padding: 22px 22px 18px; display: grid; gap: 2px; }
 .pb-pago-cab small { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .85; }
 .pb-pago-cab b { font-family: var(--alto); font-size: 72px; line-height: 1; letter-spacing: .02em; }
 .pb-reloj { font-size: 14px; opacity: .92; }
@@ -253,7 +253,7 @@
 .pb-sin-foto { grid-template-columns: 1fr !important; max-width: 720px; }
 .pb-aviso-cerrada { background: #3a2a0c; color: #f2d58a; text-align: center; padding: 12px 18px; font-size: 14.5px; }
 
-.pb-copiar-todo { width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--gold); color: #0a0a0f; border: 0; }
+.pb-copiar-todo { width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--gold); color: var(--on-acento, #0a0a0f); border: 0; }
 .pb-copiar-todo.ok { background: #2f8f62; color: #fff; }
 
 /* ---------- Básico: marca discreta ---------- */
