@@ -38,6 +38,8 @@ export type Privado = Conectado & { sala: string; ultimo: string; ultimo_en: str
 /** Nombre de la sala privada entre dos personas (siempre el mismo, sin importar quién escribe primero). */
 export const salaPrivada = (a: string, b: string) => `dm:${a < b ? a : b}:${a < b ? b : a}`;
 const EVENTO_LEIDO = "fs-chat-leido";
+/** Los mensajes del chat se borran a las 24 horas. */
+const DIA_MS = 24 * 60 * 60 * 1000;
 /** Nombre único por suscripción: dos partes de la app pueden escuchar lo mismo sin chocar. */
 const unico = (base: string) => `${base}:${Math.random().toString(36).slice(2, 8)}`;
 
@@ -92,6 +94,7 @@ export function useChat(sala: string | null, yo: Conectado | null, destinatario?
       .from("chat_mensajes")
       .select("*")
       .eq("sala", sala)
+      .gt("creado_en", new Date(Date.now() - DIA_MS).toISOString())
       .order("id", { ascending: false })
       .limit(LIMITE)
       .then(({ data }) => {
@@ -124,7 +127,10 @@ export function useChat(sala: string | null, yo: Conectado | null, destinatario?
         if (estado === "SUBSCRIBED" && yoRef.current) void canal.track(yoRef.current);
       });
     canalRef.current = canal;
+    // Los mensajes duran 24 horas: cada minuto se quitan de la pantalla los que ya vencieron.
+    const barrido = window.setInterval(() => setMensajes((m) => (m.some((x) => Date.parse(x.creado_en) < Date.now() - DIA_MS) ? m.filter((x) => Date.parse(x.creado_en) >= Date.now() - DIA_MS) : m)), 60000);
     return () => {
+      window.clearInterval(barrido);
       vivo = false;
       canalRef.current = null;
       void supabase.removeChannel(canal);
