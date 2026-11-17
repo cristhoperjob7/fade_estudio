@@ -78,11 +78,19 @@ export default function Equipo() {
             </div>
             <div className="texto">
               <b>Llegaste al límite de tu plan</b>
-              <small>El plan Básico incluye 1 barbero adicional. Con Pro puedes agregar todos los que necesites.</small>
+              <small>
+                {cupo.plan === "basico"
+                  ? "El plan Básico incluye 1 barbero adicional. Con Pro puedes sumar hasta 5."
+                  : cupo.plan === "pro"
+                    ? "El plan Pro incluye hasta 5 barberos adicionales. Con VIP tienes barberos sin límite."
+                    : "Llegaste al tope de barberos de tu sede. Escríbenos y lo ampliamos."}
+              </small>
             </div>
-            <Link to="/panel/plan" className="btn btn-primario btn-chico">
-              Pasar a Pro
-            </Link>
+            {cupo.plan !== "vip" && (
+              <Link to="/panel/plan" className="btn btn-primario btn-chico">
+                {cupo.plan === "basico" ? "Pasar a Pro" : "Pasar a VIP"}
+              </Link>
+            )}
           </div>
         ) : (
           <p className="cupo-linea">
@@ -250,7 +258,7 @@ function EditarPersona({
       .eq("id", persona.id)
       .select("id");
     setOcupado(false);
-    if (err && /LIMITE_PLAN/.test(err.message)) return setError("Tu plan Básico permite 1 barbero adicional. Pásate a Pro para sumar más.");
+    if (err && /LIMITE_PLAN/.test(err.message)) return setError(err.message.replace(/^.*LIMITE_PLAN:\s*/, ""));
     if (err || !data || data.length === 0) return setError("No se pudo guardar.");
     avisar("Cambios guardados");
     onListo();

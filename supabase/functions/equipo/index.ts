@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     });
     if (error) {
       await admin.auth.admin.deleteUser(id); // no dejar una cuenta a medias
-      if (/LIMITE_PLAN/.test(error.message)) return json({ error: "Tu plan Básico permite 1 barbero adicional. Pásate a Pro para sumar más." }, 403);
+      if (/LIMITE_PLAN/.test(error.message)) return json({ error: error.message.replace(/^.*LIMITE_PLAN:\s*/, "") }, 403);
       return json({ error: "No se pudo guardar al barbero" }, 500);
     }
     return json({ ok: true, usuario_id: id });

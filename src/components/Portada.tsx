@@ -67,46 +67,50 @@ export type PlanDef = {
   stats: [string, number][];
   incluye: string;
   hab: Hab[];
+  /** Cómo se ve el chat de la comunidad en este plan (línea destacada). */
+  chat: string;
 };
 export const PLANES_DEF: PlanDef[] = [
   {
     clave: "basico",
-    rareza: "COMÚN",
+    rareza: "PARA PARTIR",
     lema: "Para partir ordenado",
     stats: [["Barberos", 2], ["Sucursales", 1], ["Atención", 1]],
     incluye: "",
     hab: [
       { i: "cal", t: "Reservas con tu link" },
       { i: "cash", t: "Pago con comprobante" },
-      { i: "users", t: "Agenda por barbero" },
+      { i: "users", t: "Tú + 1 barbero adicional" },
     ],
+    chat: "Chat de la comunidad",
   },
   {
     clave: "pro",
-    rareza: "LEGENDARIO",
+    rareza: "MÁS POPULAR",
     lema: "Para barberías con equipo",
     stats: [["Barberos", 4], ["Sucursales", 1], ["Atención", 3]],
     incluye: "Incluye todo lo Básico",
     hab: [
+      { i: "users", t: "Hasta 5 barberos adicionales" },
       { i: "bell", t: "Avisos al celular" },
       { i: "tag", t: "Promos por día" },
       { i: "chart", t: "Caja y comisiones" },
-      { i: "img", t: "Tu logo y colores" },
-      { i: "chat", t: "Recordatorios por WhatsApp" },
+      { i: "img", t: "Página propia con tu logo y colores" },
     ],
+    chat: "Chat con tu nombre dorado",
   },
   {
     clave: "vip",
-    rareza: "ÉPICO",
-    lema: "Para marcas con varias sedes",
-    stats: [["Barberos", 5], ["Sucursales", 5], ["Atención", 5]],
+    rareza: "LO MEJOR",
+    lema: "Para marcas que quieren destacar",
+    stats: [["Barberos", 5], ["Sucursales", 1], ["Atención", 5]],
     incluye: "Incluye todo lo Pro",
     hab: [
-      { i: "list", t: "Lista de espera" },
-      { i: "gift", t: "Clientes frecuentes y premios" },
-      { i: "store", t: "Varias sucursales" },
-      { i: "globe", t: "Tu propio dominio" },
+      { i: "users", t: "Barberos sin límite" },
+      { i: "crown", t: "Página a medida, diseñada para tu barbería" },
+      { i: "star", t: "Emoticones VIP animados" },
     ],
+    chat: "Chat con nombre celeste y aura",
   },
 ];
 

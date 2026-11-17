@@ -5,7 +5,7 @@ export type PlanClave = "basico" | "pro" | "vip";
 export type PlanPrecio = { clave: PlanClave; nombre: string; precio_mensual: number; precio_anual: number };
 
 /** Días de prueba gratis que se ofrecen en la portada. */
-export const DIAS_PRUEBA = 7;
+export const DIAS_PRUEBA = 14;
 
 /** Precios de respaldo: se usan mientras cargan los reales (los edita el superadmin). */
 export const PLANES_BASE: PlanPrecio[] = [

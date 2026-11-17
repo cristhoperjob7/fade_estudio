@@ -21,10 +21,10 @@ const FRASE: Record<Plan, string> = {
 };
 const BENEFICIOS: Record<Plan, string[]> = {
   basico: ["Reservas online con pago por transferencia", "Agenda por barbero", "Tu equipo: 1 barbero adicional"],
-  pro: ["Equipo sin límite de barberos", "Página propia con tu logo, portada y color", "Avisos al celular cuando llega un comprobante", "Reservas online con pago por transferencia"],
-  vip: ["Todo lo del plan Pro", "Página a medida, diseñada contigo", "Atención directa para tus cambios", "Funciones nuevas primero"],
+  pro: ["Equipo de hasta 5 barberos adicionales", "Página propia con tu logo, portada y color", "Avisos al celular cuando llega un comprobante", "Reservas online con pago por transferencia"],
+  vip: ["Todo lo del plan Pro", "Barberos sin límite", "Página a medida, diseñada contigo", "Atención directa para tus cambios", "Funciones nuevas primero"],
 };
-const BARBEROS: Record<Plan, string> = { basico: "1 adicional", pro: "Sin límite", vip: "Sin límite" };
+const BARBEROS: Record<Plan, string> = { basico: "1 adicional", pro: "Hasta 5", vip: "Sin límite" };
 
 /** Mi plan: plan actual, comparación y pedido de cambio (sin volver a llenar datos). */
 export default function PlanDueno() {
