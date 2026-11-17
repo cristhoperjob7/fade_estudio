@@ -20,6 +20,8 @@ const PANEL: { i: Ico; t: string }[] = [
   { i: "bell", t: "Avisos al celular" },
   { i: "tag", t: "Promos por día" },
   { i: "link", t: "Tu link propio" },
+  { i: "chat", t: "Chat de la comunidad" },
+  { i: "chart", t: "Caja y comisiones" },
 ];
 
 /** Frase que se repite en la cinta (se repite varias veces para que nunca quede un hueco). */
