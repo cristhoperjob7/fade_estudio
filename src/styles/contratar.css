@@ -1,0 +1,39 @@
+/* Formulario de contratación */
+.fs-con-form { max-width: 600px; }
+.fs-form-solo { margin-top: 4px; }
+.fs-form-h { font-size: 34px; line-height: 1; margin-top: 6px; }
+.fs-par { display: grid; gap: 16px; }
+.fs-form select { box-sizing: border-box; width: 100%; min-height: 56px; padding: 0 14px; font: inherit; font-weight: 400; font-size: 17px; color: #fff; background: #0a0a10; border: 1.5px solid #34344f; border-radius: 12px; appearance: auto; color-scheme: dark; }
+.fs-form select:focus { outline: 2px solid #8fb2ff; outline-offset: 1px; border-color: transparent; }
+.fs-form select:disabled { opacity: .55; }
+.fs-form input[aria-invalid="true"], .fs-form select[aria-invalid="true"] { border-color: #e5585f; }
+.fs-campo-error { color: #ff9a9a; font-weight: 400; font-size: 14.5px; }
+.fs-ayuda { color: var(--s); font-weight: 400; font-size: 13.5px; }
+.fs-tel { display: flex; align-items: stretch; background: #0a0a10; border: 1.5px solid #34344f; border-radius: 12px; overflow: hidden; }
+.fs-tel:focus-within { outline: 2px solid #8fb2ff; outline-offset: 1px; border-color: transparent; }
+.fs-tel.mal { border-color: #e5585f; }
+.fs-tel i { display: grid; place-items: center; padding: 0 12px 0 16px; font-style: normal; font-weight: 700; font-size: 17px; color: var(--oro); background: #14141e; border-right: 1px solid #34344f; user-select: none; }
+.fs-form .fs-tel input { border: 0; border-radius: 0; background: transparent; min-width: 0; outline: 0; letter-spacing: .04em; }
+.fs-sexo { border: 0; padding: 0; margin: 0; display: grid; gap: 7px; font-weight: 700; font-size: 15.5px; }
+.fs-sexo legend { padding: 0; margin-bottom: 7px; }
+.fs-sexo > div { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fs-form .fs-sexo label { display: flex; align-items: center; justify-content: center; min-height: 56px; border: 1.5px solid #34344f; border-radius: 12px; background: #0a0a10; cursor: pointer; font-weight: 700; position: relative; }
+.fs-form .fs-sexo label.on { border-color: var(--oro); color: var(--oro); background: #1a1608; }
+.fs-form .fs-sexo label:has(input:focus-visible) { outline: 2px solid #8fb2ff; outline-offset: 2px; }
+.fs-form .fs-sexo input { position: absolute; opacity: 0; width: 1px; min-height: 0; height: 1px; }
+.fs-sexo[aria-invalid="true"] label { border-color: #e5585f; }
+.fs-mini { display: grid; gap: 10px; padding: 16px; border-radius: 16px; border: 1px solid #3a3a58; background: linear-gradient(180deg, #17171f, #101018); }
+.fs-mini-top { display: flex; justify-content: space-between; align-items: center; color: var(--s); font-size: 14px; }
+.fs-mini-top a { color: var(--oro); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; min-height: 32px; display: inline-flex; align-items: center; }
+.fs-mini-plan { font-family: "FS Bask", Georgia, serif; font-weight: 400; font-size: 30px; line-height: 1; }
+.fs-mini .fs-ciclos { margin: 0; }
+.fs-mini-precio { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.fs-mini-precio b { font-size: 34px; letter-spacing: -.02em; }
+.fs-mini-precio s { color: var(--s); font-size: 18px; }
+.fs-mini-precio small { color: var(--s); font-size: 14.5px; }
+.fs-mini-desc { color: #8fe0bd; font-size: 14.5px; }
+.fs-pagar { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 20px 16px; margin: 6px 0 4px; border-radius: 18px; border: 1px solid #6b5a22; background: linear-gradient(180deg, #1d1809, #120f06); }
+.fs-pagar span { color: var(--s); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
+.fs-pagar b { font-size: 44px; line-height: 1.1; color: var(--oro); letter-spacing: -.02em; }
+.fs-pagar small { color: var(--s); font-size: 14.5px; }
+@media (min-width: 560px) { .fs-par { grid-template-columns: 1fr 1fr; } }

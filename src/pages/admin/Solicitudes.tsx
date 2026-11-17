@@ -26,7 +26,11 @@ export type Solicitud = {
   descuento_codigo?: string | null;
   descuento_pct?: number | null;
   descuento_meses?: number | null;
+  sexo?: "masculino" | "femenino" | null;
+  region?: string | null;
+  comuna?: string | null;
 };
+type Extra = { id: string; sexo: Solicitud["sexo"]; region: string | null; comuna: string | null };
 
 const ETIQUETA: Record<Solicitud["estado"], string> = { nueva: "Nueva", contactada: "En proceso", creada: "Terminada", descartada: "Descartada" };
 const TONO: Record<Solicitud["estado"], string> = { nueva: "aviso", contactada: "ok-suave", creada: "ok", descartada: "gris" };
@@ -67,7 +71,10 @@ export default function Solicitudes() {
     const { data, error: err } = await supabase.rpc("admin_solicitudes");
     if (err) return setError("No pudimos cargar las solicitudes. Revisa que paso05-planes.sql esté ejecutado.");
     setError("");
-    setLista((data ?? []) as Solicitud[]);
+    // Datos del formulario nuevo (sexo, región, comuna). Si el paso25 aún no se ejecutó, simplemente no aparecen.
+    const ex = await supabase.rpc("admin_solicitudes_extra");
+    const extra = new Map(((ex.error ? [] : ex.data ?? []) as Extra[]).map((x) => [x.id, x]));
+    setLista(((data ?? []) as Solicitud[]).map((s) => ({ ...s, ...(extra.get(s.id) ? { sexo: extra.get(s.id)!.sexo, region: extra.get(s.id)!.region, comuna: extra.get(s.id)!.comuna } : {}) })));
     window.dispatchEvent(new Event("fs-solicitudes")); // actualiza el contador del menú
   }, []);
   useEffect(() => {
@@ -177,6 +184,11 @@ export default function Solicitudes() {
               <span className={`chip sus-${TONO[abierta.estado]}`}>{ETIQUETA[abierta.estado]}</span>
             </div>
             <p className="suave" style={{ margin: "2px 0" }}>{formatearTelefono(abierta.telefono)}{abierta.correo ? ` · ${abierta.correo}` : ""}</p>
+            {abierta.comuna && (
+              <p className="suave" style={{ margin: "2px 0" }}>
+                {abierta.sexo === "femenino" ? "Mujer" : "Hombre"} · {abierta.comuna}, {abierta.region}
+              </p>
+            )}
             <p style={{ marginTop: 8 }}>
               {abierta.es_cambio ? "Quiere cambiar a" : "Quiere"} <b>{PLAN_LABEL[abierta.plan]}</b> · {CICLO[abierta.ciclo]}
             </p>
