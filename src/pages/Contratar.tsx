@@ -214,7 +214,7 @@ export default function Contratar() {
           </section>
         ) : (
           <form className="fs-form fs-form-solo" onSubmit={enviar} noValidate ref={formRef}>
-            <div className="fs-mini">
+            <div className={`fs-mini${desc && ciclo !== "prueba" ? " oferta" : ""}`}>
               <div className="fs-mini-top">
                 <span>Tu plan</span>
                 <Link to="/fade-studio#planes">Cambiar plan</Link>
@@ -227,6 +227,7 @@ export default function Contratar() {
                   </button>
                 ))}
               </div>
+              {desc && ciclo !== "prueba" && <span className="fs-cinta">★ PRECIO FUNDADOR −{desc.porcentaje}%</span>}
               <div className="fs-mini-precio" aria-live="polite">
                 {ciclo === "prueba" ? (
                   <>
@@ -242,9 +243,17 @@ export default function Contratar() {
                 )}
               </div>
               {desc && ciclo !== "prueba" && (
-                <p className="fs-mini-desc">
-                  Código <b>{desc.codigo}</b>: −{desc.porcentaje}% por {desc.meses} {desc.meses === 1 ? "mes" : "meses"}. Ahorras {clp(original - final)}.
-                </p>
+                <>
+                  <p className="fs-mini-ahorro">
+                    Ahorras {clp(original - final)} cada {unidad}
+                  </p>
+                  <p className="fs-lock">
+                    <Ic n="shield" s={16} />
+                    <span>
+                      Código <b>{desc.codigo}</b>: precio especial por {desc.meses} {desc.meses === 1 ? "mes" : "meses"}.
+                    </span>
+                  </p>
+                </>
               )}
             </div>
 
@@ -277,7 +286,7 @@ export default function Contratar() {
 
             <label>
               <span>Celular</span>
-              <div className={`fs-tel${mostrar("celular") ? " mal" : ""}`}>
+              <div className={`fs-cel${mostrar("celular") ? " mal" : ""}`}>
                 <i aria-hidden="true">+569</i>
                 <input
                   {...props("celular")}
