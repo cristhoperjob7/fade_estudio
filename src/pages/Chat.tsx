@@ -5,6 +5,7 @@ import Avatar, { iniciales } from "../components/Avatar";
 import Hoja from "../components/Hoja";
 import Icon from "../components/Icon";
 import Sticker, { Peon, StickerDefs } from "../components/Sticker";
+import { NOMBRES } from "../lib/stickers";
 import { useToast } from "../components/Toast";
 import { useAuth } from "../lib/auth";
 import { COMANDOS, PACKS, baneoChat, comandoChat, listarSancionados, marcarLeido, puedeUsarPack, salaPrivada, silenciarChat, useAjusteChat, useBloqueados, useChat, useEstadoChat, useNoLeidos, usePrivados } from "../lib/chat";
@@ -31,12 +32,12 @@ const GRUPOS: { clave: Tipo; titulo: string }[] = [
 /** Lo que se ofrece al tocar un pack bloqueado. */
 const VENTA: Record<"pro" | "vip", { titulo: string; lineas: string[] }> = {
   pro: {
-    titulo: "Desbloquea los 25 emoticones Pro",
+    titulo: "Desbloquea los 35 emoticones Pro",
     lineas: ["Tijeras, navaja, poste y más, animados", "Tu página propia con fotos y mapa", "Avisos a tus clientes"],
   },
   vip: {
     titulo: "Sé VIP y destaca en todo el chat",
-    lineas: ["25 emoticones VIP de lujo, con animaciones únicas", "Tus mensajes con brillo y tu peón con aura", "Página a medida hecha para tu barbería"],
+    lineas: ["35 emoticones VIP de lujo, con animaciones únicas", "Tus mensajes con brillo y tu peón con aura", "Página a medida hecha para tu barbería"],
   },
 };
 
@@ -184,6 +185,7 @@ function Sala({ onSalir, est }: { onSalir: () => void; est: ReturnType<typeof us
   const [historial, setHistorial] = useState(false);
   const [ficha, setFicha] = useState<Conectado | null>(null);
   const [stickerSel, setStickerSel] = useState<string | null>(null);
+  const [vista, setVista] = useState<string | null>(null);
   const [menuCab, setMenuCab] = useState(false);
   const [moderando, setModerando] = useState(false);
   const [sanc, setSanc] = useState<Sancionados | null>(null);
@@ -492,18 +494,26 @@ function Sala({ onSalir, est }: { onSalir: () => void; est: ReturnType<typeof us
                 </div>
               );
               if (enDm) {
+                const quien = mioMsg ? yo : dm;
+                const prevDm = mensajes.slice(0, i).reverse().find((x) => !x.borrado);
+                const seguidoDm = !!prevDm && prevDm.autor_id === m.autor_id && new Date(m.creado_en).getTime() - new Date(prevDm.creado_en).getTime() < 180000;
                 return (
-                  <div key={m.id} className={`chat-burb${mioMsg ? " mio" : ""}`}>
-                    {cuerpo}
-                    <time>{hora(m.creado_en)}</time>
-                    {opciones}
+                  <div key={m.id} className={`chat-fila-dm${mioMsg ? " mio" : ""}${seguidoDm ? " seguido" : ""}`}>
+                    <div className="chat-av">
+                      {!seguidoDm && <Avatar sencillo iniciales={iniciales(quien?.nombre ?? m.autor_nombre)} foto={urlFoto(quien?.avatar ?? m.autor_avatar)} rojo={quien?.rol === "superadmin"} plan={quien?.plan ?? m.autor_plan} />}
+                    </div>
+                    <div className={`chat-burb${mioMsg ? " mio" : ""}`}>
+                      {cuerpo}
+                      <time>{hora(m.creado_en)}</time>
+                      {opciones}
+                    </div>
                   </div>
                 );
               }
               const previo = mensajes.slice(0, i).reverse().find((x) => !x.borrado);
               const seguido = previo && previo.autor_id === m.autor_id && new Date(m.creado_en).getTime() - new Date(previo.creado_en).getTime() < 180000;
               return (
-                <div key={m.id} className={`chat-msg${seguido ? " seguido" : ""}${m.autor_plan === "vip" && m.autor_rol !== "superadmin" ? " vipmsg" : ""}`}>
+                <div key={m.id} className={`chat-msg${seguido ? " seguido" : ""}`}>
                   <div className="chat-av">{!seguido && <Avatar sencillo iniciales={iniciales(m.autor_nombre)} foto={urlFoto(m.autor_avatar)} rojo={m.autor_rol === "superadmin"} plan={m.autor_plan} />}</div>
                   <div className="chat-cuerpo">
                     {!seguido && (
@@ -539,42 +549,45 @@ function Sala({ onSalir, est }: { onSalir: () => void; est: ReturnType<typeof us
                 <div className="chat-panel" role="dialog" aria-label="Emoticones">
                   <div className="chat-packs" role="tablist">
                     {PACKS.map((p) => (
-                      <button key={p.clave} type="button" role="tab" aria-selected={pack === p.clave} className={`${pack === p.clave ? "on " : ""}pk-${p.clave}`} onClick={() => setPack(p.clave)}>
-                        {!puedeUsarPack(miPlan, p.clave) && <Icon nombre="lock" size={13} />} {p.nombre} <small>{p.items.length}</small>
+                      <button key={p.clave} type="button" role="tab" aria-selected={pack === p.clave} className={`${pack === p.clave ? "on " : ""}pk-${p.clave}`} onClick={() => { setPack(p.clave); setVista(null); }}>
+                        {!puedeUsarPack(miPlan, p.clave) && <Icon nombre="lock" size={13} />} {p.nombre}
                       </button>
                     ))}
                   </div>
+                  {!libre && venta && (() => {
+                    const claveV = vista && vista.startsWith(`${pack}:`) ? vista : `${pack}:${packActual?.items[0] ?? ""}`;
+                    const nombreV = NOMBRES[claveV.split(":")[1] ?? ""] ?? "";
+                    return (
+                      <div className={`chat-vista vista-${pack}`}>
+                        <Sticker clave={claveV} tam={84} />
+                        <b>{nombreV}</b>
+                        <small>Exclusivo {pack === "vip" ? "VIP" : "Pro"} · lo ven todos en el chat</small>
+                        <p className="chat-vista-t">{venta.titulo}</p>
+                        {esDueno ? (
+                          <Link className="btn btn-primario" to="/panel/plan">
+                            Pasarme a {pack === "vip" ? "VIP" : "Pro"}
+                          </Link>
+                        ) : (
+                          <small>Pídele al dueño de tu barbería que active el plan {pack === "vip" ? "VIP" : "Pro"}.</small>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="chat-stickers">
                     {packActual?.items.map((n) => (
                       <button
                         key={n}
                         type="button"
                         className={libre ? "" : "bloq"}
-                        aria-label={n}
-                        onClick={() => (libre ? (setStickerSel(`${pack}:${n}`), setPanel(false), entradaRef.current?.focus()) : avisar(pack === "vip" ? "Este emoticón es VIP. ¡Pásate a VIP para usarlo!" : "Este emoticón es del plan Pro.", "error"))}
+                        aria-label={NOMBRES[n] ?? n}
+                        title={NOMBRES[n] ?? n}
+                        onClick={() => (libre ? (setStickerSel(`${pack}:${n}`), setPanel(false), entradaRef.current?.focus()) : setVista(`${pack}:${n}`))}
                       >
                         <Sticker clave={`${pack}:${n}`} tam={34} />
                         {!libre && <i className="cand" aria-hidden="true"><Icon nombre="lock" size={11} /></i>}
                       </button>
                     ))}
                   </div>
-                  {!libre && venta && (
-                    <div className={`chat-venta venta-${pack}`}>
-                      <b>{venta.titulo}</b>
-                      <ul>
-                        {venta.lineas.map((l) => (
-                          <li key={l}>{l}</li>
-                        ))}
-                      </ul>
-                      {esDueno ? (
-                        <Link className="btn btn-primario btn-chico" to="/panel/plan">
-                          Pasar al plan {pack === "vip" ? "VIP" : "Pro"}
-                        </Link>
-                      ) : (
-                        <small>Pídele al dueño de tu barbería que active el plan {pack === "vip" ? "VIP" : "Pro"}.</small>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
               {pendiente && (

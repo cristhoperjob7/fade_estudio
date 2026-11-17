@@ -1013,3 +1013,24 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, te
 .seg > *, .kpis > *, .bar-rapidas > *, .ficha-planes > * { min-width: 0; }
 .seg button, .bar-rapidas > * { overflow: hidden; text-overflow: ellipsis; }
 html, body { overflow-x: clip; }
+
+/* ---------- Emoticones (panel con vista previa) · fotos en el privado · aro del avatar por plan ---------- */
+.chat-panel { width: min(372px, calc(100vw - 24px)); }
+.chat-packs button { flex: 1; justify-content: center; min-height: 40px; border-radius: 12px; }
+.chat-packs button small { display: none; }
+.chat-stickers { grid-template-columns: repeat(6, minmax(0, 1fr)); max-height: 168px; }
+.chat-vista { display: grid; justify-items: center; gap: 4px; text-align: center; padding: 16px 12px; margin-bottom: 10px; border-radius: 16px; border: 1px solid #3a3470; background: radial-gradient(circle at 50% 35%, #2a2350, #12141b 72%); }
+.chat-vista.vista-pro { border-color: #4a3d14; background: radial-gradient(circle at 50% 35%, #2a2410, #12141b 72%); }
+.chat-vista b { font-size: 15px; color: #ffe98a; }
+.chat-vista small { color: #cfd5e4; font-size: 12.5px; }
+.chat-vista-t { margin: 4px 0 6px; font-size: 13px; font-weight: 600; color: var(--tx); }
+.chat-vista .btn { min-height: 42px; }
+.chat-fila-dm { display: flex; gap: 8px; align-items: flex-end; max-width: 100%; }
+.chat-fila-dm.mio { flex-direction: row-reverse; }
+.chat-fila-dm .chat-av { width: 30px; flex: none; }
+.chat-fila-dm .chat-av .avatar { width: 30px; height: 30px; font-size: 11px; }
+.chat-fila-dm .chat-burb { max-width: calc(100% - 44px); align-self: auto; }
+.barra-yo { border-color: var(--line); }
+.panel-pro .barra-yo { border-color: var(--oro); }
+.panel-vip .barra-yo { border-color: #8fe3ff; }
+.panel-rojo .barra-yo { border-color: var(--rojo-fs); }
