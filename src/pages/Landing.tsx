@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { enlaceWhatsapp } from "../lib/whatsapp";
 import { ahorroAnual, DIAS_PRUEBA, mesesGratis, usePlanes } from "../lib/planes";
-import { CabeceraPortada, Ic, Monto, PiePortada, PLANES_DEF } from "../components/Portada";
+import { FadeMark } from "../components/FadeLogo";
+import { Ic, Monto, PiePortada, PLANES_DEF } from "../components/Portada";
 import type { Ico } from "../components/Portada";
 import "../styles/landing.css";
 import "../styles/landing2.css";
@@ -12,16 +13,60 @@ const EmoticonesPortada = lazy(() => import("../components/EmoticonesPortada"));
 const SOPORTE = ((import.meta.env.VITE_SOPORTE_WHATSAPP as string | undefined) ?? "").replace(/\D/g, "");
 
 /* ---------- Contenido ---------- */
-const PANEL: { i: Ico; t: string; d: string }[] = [
-  { i: "cal", t: "Reservan solos", d: "A cualquier hora" },
-  { i: "cash", t: "Pagan antes", d: "Con comprobante" },
-  { i: "users", t: "Un panel por barbero", d: "Cada uno su agenda" },
-  { i: "bell", t: "Te avisan al celular", d: "Cuando reservan" },
-  { i: "tag", t: "Promos por día", d: "El precio correcto" },
-  { i: "chart", t: "Caja y comisiones", d: "Al final del día" },
-  { i: "link", t: "Tu link propio", d: "Para Instagram" },
-  { i: "phone", t: "Como una app", d: "Sin descargar nada" },
+const PANEL: { i: Ico; t: string }[] = [
+  { i: "cal", t: "Reservan solos" },
+  { i: "cash", t: "Pagan antes" },
+  { i: "users", t: "Un panel por barbero" },
+  { i: "bell", t: "Avisos al celular" },
+  { i: "tag", t: "Promos por día" },
+  { i: "link", t: "Tu link propio" },
 ];
+
+/** Frase que se repite en la cinta (se repite varias veces para que nunca quede un hueco). */
+const CINTA = ["Reservas 24/7", "Pago con comprobante", "Página propia", "Chat de barberos", "Avisos al celular"];
+
+/** Baja suave y lenta hasta una sección. Se detiene si la persona toca o rueda la pantalla. */
+let pararScroll: (() => void) | null = null;
+function suaveA(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const destino = Math.max(0, el.getBoundingClientRect().top + window.scrollY - 8);
+  const desde = window.scrollY;
+  const dist = destino - desde;
+  const quieto = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (quieto || Math.abs(dist) < 4) {
+    window.scrollTo({ top: destino, behavior: "instant" });
+    return;
+  }
+  pararScroll?.();
+  const dur = Math.min(2200, Math.max(1200, Math.abs(dist) * 0.9));
+  const t0 = performance.now();
+  let raf = 0;
+  const eventos = ["wheel", "touchstart", "keydown", "mousedown"];
+  const parar = () => {
+    cancelAnimationFrame(raf);
+    eventos.forEach((e) => window.removeEventListener(e, parar));
+    pararScroll = null;
+  };
+  eventos.forEach((e) => window.addEventListener(e, parar, { passive: true }));
+  pararScroll = parar;
+  const suave = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+  const paso = (t: number) => {
+    const p = Math.min(1, (t - t0) / dur);
+    window.scrollTo({ top: desde + dist * suave(p), behavior: "instant" });
+    if (p < 1) {
+      raf = requestAnimationFrame(paso);
+      return;
+    }
+    parar();
+    const h = el.querySelector("h2");
+    if (h) {
+      h.classList.add("lp-llega");
+      window.setTimeout(() => h.classList.remove("lp-llega"), 1700);
+    }
+  };
+  raf = requestAnimationFrame(paso);
+}
 
 const PREGUNTAS: { p: string; r: string }[] = [
   { p: "¿Mis clientes tienen que crear una cuenta?", r: "No. Reservan con su nombre y su teléfono, nada más." },
@@ -176,228 +221,269 @@ export default function Landing() {
 
   return (
     <div className="fs-landing lp">
-      <CabeceraPortada />
+      <div className="fs-poste" aria-hidden="true" />
 
       <main>
         {/* ---------- Portada ---------- */}
         <section className="lp-hero">
-          <span className="lp-tag">
-            <u /> Comunidad de barberos de todo Chile
-          </span>
-          <h1>
-            Donde los barberos <span>se hacen notar.</span>
-          </h1>
-          <p className="lp-lead">La agenda, los pagos y tu propia página. Y una comunidad de colegas en todo Chile.</p>
-          <div className="lp-row">
-            <BotonPrueba clase="fs-btn fs-btn-oro lp-cta" />
-            <a className="lp-ghost" href="#planes" aria-label="Ver los planes">
-              <Ic n="back" s={22} />
-            </a>
+          <header className="lp-nav">
+            <Link to="/fade-studio" className="lp-marca" aria-label="Fade Studio">
+              <FadeMark size={30} />
+              <span>Fade Studio</span>
+            </Link>
+            <Link to="/login" className="lp-ingresar">
+              Ingresar
+            </Link>
+          </header>
+          <div className="lp-hero-in">
+            <div className="lp-kick lp-kick-claro">Comunidad de barberos de Chile</div>
+            <h1>
+              Donde los barberos <span>se hacen notar.</span>
+            </h1>
+            <p className="lp-lead">Agenda, pagos y tu página. Todo en tu celular.</p>
+            <div className="lp-row">
+              <BotonPrueba clase="fs-btn fs-btn-oro lp-cta" />
+              <a
+                className="lp-ghost"
+                href="#planes"
+                aria-label="Ver los planes"
+                onClick={(e) => {
+                  e.preventDefault();
+                  suaveA("planes");
+                }}
+              >
+                <Ic n="back" s={22} />
+              </a>
+            </div>
           </div>
-          <p className="fs-nota">
-            <b>{DIAS_PRUEBA} días gratis en el plan Básico</b> · sin tarjeta · listo en minutos
-          </p>
         </section>
 
         <div className="lp-tick" aria-hidden="true">
           <div>
-            {[0, 1].map((n) => (
-              <span key={n}>
-                Reservas 24/7 <b>✦</b> Pago con comprobante <b>✦</b> Página propia <b>✦</b> Chat de barberos <b>✦</b> Avisos al celular <b>✦</b>{" "}
+            {[0, 1].map((g) => (
+              <span key={g}>
+                {[0, 1, 2, 3].flatMap((n) =>
+                  CINTA.map((t) => (
+                    <span key={`${g}-${n}-${t}`}>
+                      {t} <b>✦</b>
+                    </span>
+                  )),
+                )}
               </span>
             ))}
           </div>
         </div>
 
-        {/* ---------- Planes ---------- */}
-        <section id="planes" className="lp-sec" aria-labelledby="planes-t">
-          <div className="lp-kick">Planes</div>
-          <h2 id="planes-t" className="lp-h2">
-            Elige tu nivel. <em>Desliza.</em>
-          </h2>
-
-          <div className="fs-toggle lp-toggle" role="group" aria-label="Forma de pago">
-            <div className={`fs-toggle-in${anual ? " anual" : ""}`}>
-              <i className="fs-toggle-ind" aria-hidden="true" />
-              <button type="button" aria-pressed={!anual} className={!anual ? "on" : ""} onClick={() => setAnual(false)}>
-                Mensual
-              </button>
-              <button type="button" aria-pressed={anual} className={anual ? "on" : ""} onClick={() => setAnual(true)}>
-                Anual {gratis > 0 && <em>{gratis} {gratis === 1 ? "mes gratis" : "meses gratis"}</em>}
-              </button>
+        {/* ---------- Tu panel ---------- */}
+        <section id="panel" className="lp-band lp-band-a" aria-labelledby="panel-t">
+          <div className="lp-sec lp-panel">
+            <div className="lp-kick">Tu panel</div>
+            <h2 id="panel-t" className="lp-h2">
+              Todo en <em>un solo lugar.</em>
+            </h2>
+            <Celular />
+            <div className="fs-cinta">
+              {PANEL.map((f) => (
+                <div key={f.t} className="fs-cit">
+                  <span className="fs-cit-i">
+                    <Ic n={f.i} s={32} sw={1.5} />
+                  </span>
+                  <b>{f.t}</b>
+                </div>
+              ))}
             </div>
           </div>
-
-          <div className="lp-riel" ref={riel} role="list">
-            {PLANES_DEF.map((d) => {
-              const p = precios.find((x) => x.clave === d.clave);
-              if (!p) return null;
-              const ahorro = ahorroAnual(p);
-              const boton =
-                d.clave === "basico" ? (
-                  <Link className="lp-btn" to="/contratar?plan=basico&ciclo=prueba">
-                    Empezar {DIAS_PRUEBA} días gratis
-                  </Link>
-                ) : (
-                  <Link className="lp-btn" to={`/contratar?plan=${d.clave}&ciclo=${anual ? "anual" : "mensual"}`}>
-                    {d.clave === "pro" ? "Subir a Pro" : "Quiero VIP hoy"}
-                  </Link>
-                );
-              const cuerpo = (
-                <>
-                  <div className="lp-top">
-                    {d.clave === "vip" ? <span className="lp-badge">{d.rareza}</span> : <small>{d.rareza}</small>}
-                    {d.clave === "vip" && <span className="lp-corona" aria-hidden="true">👑</span>}
-                  </div>
-                  <h3>{p.nombre}</h3>
-                  <div className="lp-precio">
-                    <b>
-                      <Monto valor={anual ? p.precio_anual : p.precio_mensual} />
-                    </b>
-                    <span key={anual ? "a" : "m"} className="fs-fundir">
-                      {anual ? "/año" : "/mes"}
-                    </span>
-                  </div>
-                  <div className={`fs-ahorro${anual && ahorro > 0 ? " on" : ""}`} aria-live="polite">
-                    <div>
-                      <span>
-                        <Ic n="check" s={14} sw={2.8} /> Ahorras <Monto valor={ahorro} /> al año
-                      </span>
-                    </div>
-                  </div>
-                  <ul className="lp-ul">
-                    {d.incluye && <li>{d.incluye}</li>}
-                    {d.hab.map((h) => (
-                      <li key={h.t}>{h.t}</li>
-                    ))}
-                    <li className="lp-chat-li">{d.chat}</li>
-                  </ul>
-                  {boton}
-                  {d.clave === "vip" && <p className="lp-save">Se nota desde el primer mensaje ✨</p>}
-                </>
-              );
-              return (
-                <article key={d.clave} role="listitem" className={`lp-pl lp-pl-${d.clave}`}>
-                  {d.clave === "pro" && (
-                    <>
-                      <i className="lp-spark" style={{ right: 22, top: 58 }}>✦</i>
-                      <i className="lp-spark" style={{ right: 52, top: 94, animationDelay: ".8s", fontSize: 10 }}>✦</i>
-                    </>
-                  )}
-                  {d.clave === "vip" ? <div className="lp-in">{cuerpo}</div> : cuerpo}
-                </article>
-              );
-            })}
-          </div>
-          <div className="lp-dots" role="tablist" aria-label="Planes">
-            {[0, 1, 2].map((k) => (
-              <button key={k} type="button" role="tab" aria-selected={activa === k} aria-label={PLANES_DEF[k]?.clave} className={activa === k ? "on" : ""} onClick={() => irA(k)} />
-            ))}
-          </div>
-          <p className="fs-sinperm">
-            <Ic n="shield" s={20} /> Sin permanencia · Cancelas cuando quieras
-          </p>
         </section>
 
-        {/* ---------- Comunidad: el chat ---------- */}
-        <section className="lp-sec" aria-labelledby="com-t">
-          <div className="lp-kick">Comunidad</div>
-          <h2 id="com-t" className="lp-h2">
-            Tus colegas <em>ya están adentro.</em>
-          </h2>
-          <div className="lp-fonowrap">
-            <span className="lp-fl lp-fl1" aria-hidden="true">🔥</span>
-            <span className="lp-fl lp-fl2" aria-hidden="true">💈</span>
-            <div className="lp-phone" role="img" aria-label="Ejemplo del chat de barberos: nombres en rojo, dorado, celeste y gris según el plan">
-              <div className="lp-ph-top">
-                <i /> Chat de barberos · <em>en vivo</em>
+        <div className="fs-poste" aria-hidden="true" />
+
+        {/* ---------- Planes ---------- */}
+        <section id="planes" className="lp-band lp-band-b" aria-labelledby="planes-t">
+          <div className="lp-sec">
+            <div className="lp-kick">Planes</div>
+            <h2 id="planes-t" className="lp-h2">
+              Elige tu nivel. <em>Desliza.</em>
+            </h2>
+
+            <div className="fs-toggle lp-toggle" role="group" aria-label="Forma de pago">
+              <div className={`fs-toggle-in${anual ? " anual" : ""}`}>
+                <i className="fs-toggle-ind" aria-hidden="true" />
+                <button type="button" aria-pressed={!anual} className={!anual ? "on" : ""} onClick={() => setAnual(false)}>
+                  Mensual
+                </button>
+                <button type="button" aria-pressed={anual} className={anual ? "on" : ""} onClick={() => setAnual(true)}>
+                  Anual {gratis > 0 && <em>{gratis} {gratis === 1 ? "mes gratis" : "meses gratis"}</em>}
+                </button>
               </div>
-              <div className="lp-ph-body">
-                <p className="lp-m lp-m1">
-                  <b style={{ color: "#ff3b3b" }}>Fade Studio</b>
-                  <span>Bienvenidos al chat, ojo con los nuevos planes 🔥</span>
-                </p>
-                <p className="lp-m lp-m2">
-                  <b style={{ color: "#e0b24a" }}>Don Pato</b>
-                  <span>Alguien sabe de una máquina buena para degradé?</span>
-                </p>
-                <p className="lp-m lp-m3">
-                  <b style={{ color: "#7fb4ff" }}>Corte Fino</b>
-                  <span>La Wahl Magic Clip, no falla 💈</span>
-                </p>
-                <p className="lp-m lp-m4">
-                  <b style={{ color: "#9aa3b2" }}>Hermanos Vega</b>
-                  <span>Gracias! Me paso a Pro esta semana ⭐</span>
-                </p>
-                <div className="lp-typing" aria-hidden="true">
-                  <u /> <u /> <u />
+            </div>
+
+            <div className="lp-riel" ref={riel} role="list">
+              {PLANES_DEF.map((d) => {
+                const p = precios.find((x) => x.clave === d.clave);
+                if (!p) return null;
+                const ahorro = ahorroAnual(p);
+                const boton =
+                  d.clave === "basico" ? (
+                    <Link className="lp-btn" to="/contratar?plan=basico&ciclo=prueba">
+                      Empezar {DIAS_PRUEBA} días gratis
+                    </Link>
+                  ) : (
+                    <Link className="lp-btn" to={`/contratar?plan=${d.clave}&ciclo=${anual ? "anual" : "mensual"}`}>
+                      {d.clave === "pro" ? "Subir a Pro" : "Quiero VIP hoy"}
+                    </Link>
+                  );
+                const cuerpo = (
+                  <>
+                    <div className="lp-top">
+                      {d.clave === "vip" ? <span className="lp-badge">{d.rareza}</span> : <small>{d.rareza}</small>}
+                      {d.clave === "vip" && <span className="lp-corona" aria-hidden="true">👑</span>}
+                    </div>
+                    <h3>{p.nombre}</h3>
+                    <div className="lp-precio">
+                      <b>
+                        <Monto valor={anual ? p.precio_anual : p.precio_mensual} />
+                      </b>
+                      <span key={anual ? "a" : "m"} className="fs-fundir">
+                        {anual ? "/año" : "/mes"}
+                      </span>
+                    </div>
+                    <div className={`fs-ahorro${anual && ahorro > 0 ? " on" : ""}`} aria-live="polite">
+                      <div>
+                        <span>
+                          <Ic n="check" s={14} sw={2.8} /> Ahorras <Monto valor={ahorro} /> al año
+                        </span>
+                      </div>
+                    </div>
+                    <ul className="lp-ul">
+                      {d.incluye && <li>{d.incluye}</li>}
+                      {d.hab.map((h) => (
+                        <li key={h.t}>{h.t}</li>
+                      ))}
+                      <li className="lp-chat-li">{d.chat}</li>
+                    </ul>
+                    {boton}
+                    {d.clave === "vip" && <p className="lp-save">Se nota desde el primer mensaje ✨</p>}
+                  </>
+                );
+                return (
+                  <article key={d.clave} role="listitem" className={`lp-pl lp-pl-${d.clave}`}>
+                    {d.clave === "pro" && (
+                      <>
+                        <i className="lp-spark" style={{ right: 22, top: 58 }}>✦</i>
+                        <i className="lp-spark" style={{ right: 52, top: 94, animationDelay: ".8s", fontSize: 10 }}>✦</i>
+                      </>
+                    )}
+                    {d.clave === "vip" ? <div className="lp-in">{cuerpo}</div> : cuerpo}
+                  </article>
+                );
+              })}
+            </div>
+            <div className="lp-dots" role="tablist" aria-label="Planes">
+              {[0, 1, 2].map((k) => (
+                <button key={k} type="button" role="tab" aria-selected={activa === k} aria-label={PLANES_DEF[k]?.clave} className={activa === k ? "on" : ""} onClick={() => irA(k)} />
+              ))}
+            </div>
+            <p className="fs-sinperm">
+              <Ic n="shield" s={20} /> Sin permanencia · Cancelas cuando quieras
+            </p>
+        </div>
+        </section>
+
+        <div className="fs-poste" aria-hidden="true" />
+
+        {/* ---------- Comunidad: el chat (con foto de fondo) ---------- */}
+        <section className="lp-band lp-band-foto" aria-labelledby="com-t">
+          <div className="lp-sec">
+            <div className="lp-kick">Comunidad</div>
+            <h2 id="com-t" className="lp-h2">
+              Tus colegas <em>ya están adentro.</em>
+            </h2>
+            <div className="lp-fonowrap">
+              <div className="lp-phone" role="img" aria-label="Ejemplo del chat de barberos: nombres en rojo, dorado, celeste y gris según el plan">
+                <div className="lp-ph-top">
+                  <i /> Chat de barberos · <em>en vivo</em>
+                </div>
+                <div className="lp-ph-body">
+                  <p className="lp-m lp-m1">
+                    <b style={{ color: "#ff3b3b" }}>Fade Studio</b>
+                    <span>Bienvenidos al chat 🔥</span>
+                  </p>
+                  <p className="lp-m lp-m2">
+                    <b style={{ color: "#e0b24a" }}>Don Pato</b>
+                    <span>¿Máquina buena para degradé?</span>
+                  </p>
+                  <p className="lp-m lp-m3">
+                    <b style={{ color: "#7fb4ff" }}>Corte Fino</b>
+                    <span>La Wahl Magic Clip 💈</span>
+                  </p>
+                  <p className="lp-m lp-m4">
+                    <b style={{ color: "#9aa3b2" }}>Hermanos Vega</b>
+                    <span>Gracias, me paso a Pro ⭐</span>
+                  </p>
+                  <div className="lp-typing" aria-hidden="true">
+                    <u /> <u /> <u />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="lp-rangos">
-            <span style={{ color: "#ff3b3b", borderColor: "#ff3b3b55" }}>ADM</span>
-            <span style={{ color: "#e0b24a", borderColor: "#e0b24a55" }}>Barbero Pro</span>
-            <span style={{ color: "#8fc2ff", borderColor: "#8fc2ff55" }}>Barbero VIP</span>
-          </div>
-          <div className="lp-centro">
-            <BotonPrueba clase="fs-btn fs-btn-oro lp-cta lp-ancho" />
+            <div className="lp-rangos">
+              <span style={{ color: "#ff6b6b", borderColor: "#ff3b3b66" }}>ADM</span>
+              <span style={{ color: "#e0b24a", borderColor: "#e0b24a66" }}>Pro</span>
+              <span style={{ color: "#8fc2ff", borderColor: "#8fc2ff66" }}>VIP</span>
+            </div>
           </div>
         </section>
 
-        {/* ---------- Comunidad: emoticones por plan (aparte del chat) ---------- */}
-        <section className="lp-sec" aria-labelledby="emo-t">
-          <div className="lp-kick">Comunidad</div>
-          <h2 id="emo-t" className="lp-h2">
-            Tu nivel se <em>nota en el chat.</em>
-          </h2>
-          <p className="lp-sub">Todos entran al chat. Los emoticones animados suben contigo.</p>
-          <Suspense fallback={<div className="lp-emo-carga" />}>
-            <EmoticonesPortada />
-          </Suspense>
-          <p className="lp-hint">
-            ¿Ves la diferencia? <b>Con Pro</b> te ven dorado. <b className="lp-hint-vip">Con VIP</b>, brillas.
-          </p>
-          <div className="lp-centro">
-            <a className="fs-btn fs-btn-oro lp-cta lp-ancho" href="#planes">
-              Subir mi plan
-            </a>
+        <div className="fs-poste" aria-hidden="true" />
+
+        {/* ---------- Comunidad: emoticones por plan ---------- */}
+        <section className="lp-band lp-band-b" aria-labelledby="emo-t">
+          <div className="lp-sec">
+            <div className="lp-kick">Comunidad</div>
+            <h2 id="emo-t" className="lp-h2">
+              Tu nivel se <em>nota en el chat.</em>
+            </h2>
+            <Suspense fallback={<div className="lp-emo-carga" />}>
+              <EmoticonesPortada />
+            </Suspense>
+            <p className="lp-hint">
+              <b>Con Pro</b> te ven dorado. <b className="lp-hint-vip">Con VIP</b>, brillas.
+            </p>
+            <div className="lp-centro">
+              <a
+                className="fs-btn fs-btn-oro lp-cta lp-ancho"
+                href="#planes"
+                onClick={(e) => {
+                  e.preventDefault();
+                  suaveA("planes");
+                }}
+              >
+                Subir mi plan
+              </a>
+            </div>
           </div>
         </section>
 
-        {/* ---------- El panel ---------- */}
-        <section id="panel" className="fs-sec lp-panel" aria-labelledby="panel-t">
-          <div className="lp-kick">Tu panel</div>
-          <h2 id="panel-t" className="lp-h2">
-            Todo en un <em>solo lugar.</em>
-          </h2>
-          <Celular />
-          <div className="fs-cinta">
-            {PANEL.map((f) => (
-              <div key={f.t} className="fs-cit">
-                <span className="fs-cit-i">
-                  <Ic n={f.i} s={34} sw={1.5} />
-                </span>
-                <b>{f.t}</b>
-                <small>{f.d}</small>
-              </div>
+        <div className="fs-poste" aria-hidden="true" />
+
+        <section className="lp-band lp-band-a fs-faq-band" aria-labelledby="faq-t">
+          <div className="fs-sec fs-faq">
+            <h2 id="faq-t" className="lp-h2">
+              Lo que más nos <em>preguntan</em>
+            </h2>
+            {PREGUNTAS.map((q) => (
+              <details key={q.p}>
+                <summary>{q.p}</summary>
+                <p>{q.r}</p>
+              </details>
             ))}
           </div>
         </section>
 
-        <section className="fs-sec fs-faq" aria-labelledby="faq-t">
-          <h2 id="faq-t" className="lp-h2">
-            Lo que más nos <em>preguntan</em>
-          </h2>
-          {PREGUNTAS.map((q) => (
-            <details key={q.p}>
-              <summary>{q.p}</summary>
-              <p>{q.r}</p>
-            </details>
-          ))}
-        </section>
+        <div className="fs-poste" aria-hidden="true" />
 
         {/* ---------- Contacto: el chat de WhatsApp de siempre ---------- */}
+        <div className="lp-band lp-band-b">
         <section className="fs-final" aria-labelledby="final-t">
           <div className="fs-final-in">
             <div className="fs-final-txt">
@@ -428,6 +514,7 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        </div>
       </main>
 
       <PiePortada />

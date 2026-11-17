@@ -1,34 +1,56 @@
-/* Portada de Fade Studio · versión 2 (negro y dorado). Se suma a landing.css. */
+/* Portada de Fade Studio · versión 2 (negro y dorado, fotos). Se suma a landing.css.
+   Tipografías: Gloock (títulos) y Outfit (texto), ambas con licencia libre (SIL OFL). */
+@font-face { font-family: "LP Gloock"; src: url("/fonts/Gloock-Regular.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "LP Outfit"; src: url("/fonts/Outfit-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "LP Outfit"; src: url("/fonts/Outfit-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
 @property --lp-a { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
 
 .lp { background: #070708; background-image: radial-gradient(520px 320px at 85% -40px, #e0b24a22, transparent), radial-gradient(420px 420px at -12% 48%, #3b7bff1a, transparent); background-repeat: no-repeat; }
 :where(.lp) *, :where(.lp) *::before, :where(.lp) *::after { box-sizing: border-box; }
 :where(.lp) :is(h1, h2, h3, p, ul) { margin: 0; padding: 0; }
-.lp h1, .lp h2, .lp h3 { font-family: "FS Work", system-ui, sans-serif; font-weight: 700; letter-spacing: -.035em; }
-.lp .fs-marca { font-family: "FS Work", system-ui, sans-serif; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 16px; }
+.lp { font-family: "LP Outfit", system-ui, sans-serif; }
+.lp h1, .lp h2, .lp h3 { font-family: "LP Gloock", Georgia, serif; font-weight: 400; letter-spacing: -.01em; }
+.lp .fs-tel-cab b { font-family: "LP Gloock", Georgia, serif; }
+.lp .fs-monto b { font-family: "LP Outfit", system-ui, sans-serif; }
+.lp .fs-marca { font-family: "LP Outfit", system-ui, sans-serif; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; font-size: 15px; }
 .lp .fs-poste { height: 6px; }
 
-/* ---- portada ---- */
-.lp-hero { max-width: 760px; margin: 0 auto; padding: 22px 22px 18px; }
-.lp-tag { display: inline-flex; gap: 9px; align-items: center; border: 1px solid #2b2e38; border-radius: 99px; padding: 7px 14px; font-size: 13px; color: #c9cdd6; }
-.lp-tag u { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px #35c48a30; animation: lp-pulso 1.6s ease-in-out infinite; }
-@keyframes lp-pulso { 50% { opacity: .35; } }
-.lp-hero h1 { font-size: clamp(42px, 12.6vw, 84px); line-height: .98; letter-spacing: -.045em; margin: 18px 0 14px; }
-.lp-hero h1 span { background: linear-gradient(100deg, #f6dc8a, #e0b24a 50%, #b8862b); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.lp-lead { color: #a5acb9; font-size: clamp(16px, 4.3vw, 20px); line-height: 1.45; max-width: 21em; }
-.lp-row { display: flex; gap: 10px; margin: 22px 0 6px; max-width: 460px; }
+/* ---- portada con foto ---- */
+.lp-hero { position: relative; min-height: min(100svh, 880px); display: flex; flex-direction: column; justify-content: flex-end;
+  background: linear-gradient(180deg, #07070855 0%, #07070833 30%, #070708dd 80%, #070708 100%), url("/img/portada-corte.jpg") 50% 30% / cover no-repeat; }
+.lp-nav { position: absolute; z-index: 2; top: 0; left: 0; right: 0; max-width: 1180px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; }
+.lp-marca { display: inline-flex; align-items: center; gap: 11px; font: 700 14px "LP Outfit", sans-serif; letter-spacing: .22em; text-transform: uppercase; }
+.lp-ingresar { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border: 1px solid #ffffff44; border-radius: 10px; background: #0008; font-weight: 700; font-size: 14.5px; }
+.lp-ingresar:hover { border-color: var(--oro); }
+.lp-hero-in { position: relative; z-index: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: 120px 22px 44px; }
+.lp-kick-claro { color: #fff; padding: 0; text-shadow: 0 1px 8px #000a; }
+.lp-hero h1 { font-size: clamp(46px, 14.4vw, 88px); line-height: .96; letter-spacing: -.01em; margin: 14px 0; text-shadow: 0 2px 24px #0008; }
+.lp-hero h1 span { background: linear-gradient(100deg, #f6dc8a, #e0b24a 50%, #b8862b); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+.lp-lead { color: #d3d6de; font-size: clamp(17px, 4.6vw, 20px); max-width: 18em; margin-bottom: 22px; text-shadow: 0 1px 10px #000a; }
+.lp-row { display: flex; gap: 10px; max-width: 460px; }
 .lp-row .lp-cta { flex: 1; padding: 0 18px; }
-.lp-ghost { flex: none; width: 56px; min-height: 56px; border-radius: 10px; border: 1px solid #2b2e38; display: grid; place-items: center; color: var(--t); transition: border-color .2s, transform .2s; }
+.lp-ghost { flex: none; width: 56px; min-height: 56px; border-radius: 10px; border: 1px solid #ffffff55; background: #0007; display: grid; place-items: center; color: var(--t); transition: border-color .2s, transform .15s; }
 .lp-ghost svg { transform: rotate(-90deg); animation: lp-baja 1.8s ease-in-out infinite; }
 .lp-ghost:hover { border-color: var(--oro); }
+.lp-ghost:active { transform: scale(.94); }
 @keyframes lp-baja { 50% { translate: 0 4px; } }
-.lp .fs-btn-oro { box-shadow: 0 14px 34px -14px #e0b24a99; transition: transform .2s, filter .2s; }
+.lp .fs-btn-oro { box-shadow: 0 14px 34px -14px #e0b24acc; transition: transform .2s, filter .2s; }
 .lp .fs-btn-oro:active { transform: scale(.98); }
+.lp-llega { animation: lp-llega 1.6s ease both; }
+@keyframes lp-llega { 0%, 100% { text-shadow: 0 0 0 #e0b24a00; } 35% { text-shadow: 0 0 30px #e0b24acc; color: #fff2c4; } }
 
-.lp-tick { border-block: 1px solid #1d2028; padding: 12px 0; overflow: hidden; white-space: nowrap; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #7d8594; margin-top: 12px; }
-.lp-tick > div { display: inline-block; animation: lp-marquesina 26s linear infinite; }
-.lp-tick b { color: var(--oro); margin: 0 12px; font-weight: 400; }
+/* cinta: cada grupo es más ancho que cualquier pantalla, así nunca queda un hueco */
+.lp-tick { border-block: 1px solid #1d2028; background: #070708; padding: 12px 0; overflow: hidden; white-space: nowrap; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #8a92a1; }
+.lp-tick > div { display: inline-block; animation: lp-marquesina 60s linear infinite; will-change: transform; }
+.lp-tick b { color: var(--oro); margin: 0 16px; font-weight: 400; }
 @keyframes lp-marquesina { to { transform: translateX(-50%); } }
+
+/* ---- bandas: cada sección con su fondo, separadas por la franja de poste ---- */
+.lp-band-a { background: #070708; }
+.lp-band-b { background: #0d0e12; }
+.lp-band-foto { background: linear-gradient(180deg, #070708f0 0%, #070708aa 35%, #070708b8 70%, #070708f0 100%), url("/img/portada-barberia.jpg") 45% 50% / cover no-repeat; }
+.lp-band-foto .lp-h2 { text-shadow: 0 2px 20px #000c; }
+.lp-band .lp-sec { padding: 52px 0 46px; }
 
 /* ---- secciones ---- */
 .lp-sec { max-width: 1080px; margin: 0 auto; padding: 44px 0 10px; }
@@ -48,7 +70,7 @@
 .lp-top small { font-size: 11px; font-weight: 700; letter-spacing: .14em; color: #9ba3b1; }
 .lp-pl h3 { font-size: 28px; margin-top: 6px; }
 .lp-precio { display: flex; align-items: baseline; gap: 4px; margin: 4px 0 2px; }
-.lp-precio b { font: 700 40px "FS Work", sans-serif; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.lp-precio b { font: 700 40px "LP Outfit", sans-serif; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .lp-precio span { color: #9ba3b1; font-size: 14px; }
 .lp-ul { list-style: none; display: grid; gap: 10px; margin: 16px 0 20px; font-size: 15px; }
 .lp-ul li { display: flex; gap: 10px; align-items: flex-start; color: #c9cdd6; line-height: 1.35; }
@@ -122,7 +144,7 @@
 .lp-emo-fila { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 26px 16px 6px; align-items: end; max-width: 520px; margin: 0 auto; }
 .lp-emo-card { position: relative; text-align: center; border-radius: 20px; padding: 16px 6px 12px; background: #0f1014; border: 1px solid #262a33; }
 .lp-emo-big { height: 88px; display: grid; place-items: center; }
-.lp-emo-card b { display: block; font: 700 16px "FS Work", sans-serif; margin-top: 6px; }
+.lp-emo-card b { display: block; font: 700 16px "LP Outfit", sans-serif; margin-top: 6px; }
 .lp-emo-card small { display: block; font-size: 12px; color: #9ba3b1; margin-top: 2px; }
 .lp-emo-pro { background: linear-gradient(180deg, #1a150a, #0f0e0b); border-color: #6b5420; box-shadow: 0 14px 34px -16px #e0b24a88; }
 .lp-emo-pro b { color: var(--oro); }
@@ -149,15 +171,18 @@
 .lp-hint b { color: var(--oro); } .lp-hint .lp-hint-vip { color: #8fc2ff; }
 
 /* ---- panel, preguntas ---- */
-.lp-panel { padding-top: 44px; }
+.lp-band .lp-panel { padding-left: 22px; padding-right: 22px; }
 .lp-panel .lp-kick, .lp-panel .lp-h2 { padding-left: 0; padding-right: 0; }
-.lp .fs-cit b { font: 700 18px "FS Work", sans-serif; letter-spacing: -.01em; }
+.lp .fs-cit b { font: 700 17px/1.2 "LP Outfit", sans-serif; letter-spacing: 0; }
 .lp .fs-faq .lp-h2 { padding: 0 0 18px; text-align: left; }
 .lp .fs-final h2 { font-size: clamp(28px, 7vw, 46px); }
 
 @media (min-width: 900px) {
-  .lp-hero { max-width: 1080px; padding: 48px 32px 30px; }
+  .lp-hero { background: linear-gradient(90deg, #070708ee 0%, #070708aa 42%, #07070822 100%), linear-gradient(180deg, #0000 60%, #070708 100%), url("/img/portada-corte.jpg") 50% 35% / cover no-repeat; }
+  .lp-nav { padding: 22px 32px; }
+  .lp-hero-in { padding: 140px 32px 70px; }
   .lp-hero h1 { max-width: 9em; }
+  .lp-band .lp-panel { padding-left: 32px; padding-right: 32px; }
   .lp-riel { justify-content: center; padding: 36px 32px 20px; overflow: visible; }
   .lp-pl { flex: 0 0 320px; }
   .lp-dots { display: none; }

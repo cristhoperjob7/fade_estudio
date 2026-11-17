@@ -80,7 +80,7 @@ export const PLANES_DEF: PlanDef[] = [
     hab: [
       { i: "cal", t: "Reservas con tu link" },
       { i: "cash", t: "Pago con comprobante" },
-      { i: "users", t: "Tú + 1 barbero adicional" },
+      { i: "users", t: "Tú + 1 barbero" },
     ],
     chat: "Chat de la comunidad",
   },
@@ -91,11 +91,11 @@ export const PLANES_DEF: PlanDef[] = [
     stats: [["Barberos", 4], ["Sucursales", 1], ["Atención", 3]],
     incluye: "Incluye todo lo Básico",
     hab: [
-      { i: "users", t: "Hasta 5 barberos adicionales" },
+      { i: "users", t: "Hasta 5 barberos" },
       { i: "bell", t: "Avisos al celular" },
       { i: "tag", t: "Promos por día" },
       { i: "chart", t: "Caja y comisiones" },
-      { i: "img", t: "Página propia con tu logo y colores" },
+      { i: "img", t: "Página propia" },
     ],
     chat: "Chat con tu nombre dorado",
   },
@@ -107,8 +107,8 @@ export const PLANES_DEF: PlanDef[] = [
     incluye: "Incluye todo lo Pro",
     hab: [
       { i: "users", t: "Barberos sin límite" },
-      { i: "crown", t: "Página a medida, diseñada para tu barbería" },
-      { i: "star", t: "Emoticones VIP animados" },
+      { i: "crown", t: "Página a medida" },
+      { i: "star", t: "Emoticones VIP" },
     ],
     chat: "Chat con nombre celeste y aura",
   },
