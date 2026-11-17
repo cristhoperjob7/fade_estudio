@@ -36,6 +36,8 @@ export type Privado = Conectado & { sala: string; ultimo: string; ultimo_en: str
 /** Nombre de la sala privada entre dos personas (siempre el mismo, sin importar quién escribe primero). */
 export const salaPrivada = (a: string, b: string) => `dm:${a < b ? a : b}:${a < b ? b : a}`;
 const EVENTO_LEIDO = "fs-chat-leido";
+/** Nombre único por suscripción: dos partes de la app pueden escuchar lo mismo sin chocar. */
+const unico = (base: string) => `${base}:${Math.random().toString(36).slice(2, 8)}`;
 
 /** Packs de emoticones animados. Cada plan desbloquea los de su nivel y los anteriores. */
 export const PACKS: { clave: PlanChat; nombre: string; items: string[] }[] = [
@@ -171,7 +173,7 @@ export function usePrivados(miId: string | undefined) {
   useEffect(() => {
     if (!miId) return;
     void cargar();
-    const canal = supabase.channel(`chat-privados:${miId}`);
+    const canal = supabase.channel(unico(`chat-privados:${miId}`));
     canal.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_mensajes", filter: `destinatario_id=eq.${miId}` }, () => void cargar()).subscribe();
     const alLeer = () => void cargar();
     window.addEventListener(EVENTO_LEIDO, alLeer);
@@ -196,7 +198,7 @@ export function useNoLeidos(miId: string | undefined): number {
     if (!miId) return;
     const contar = () => void supabase.rpc("chat_no_leidos").then(({ data }) => setN(Number(data ?? 0)));
     contar();
-    const canal = supabase.channel(`chat-no-leidos:${miId}`);
+    const canal = supabase.channel(unico(`chat-no-leidos:${miId}`));
     canal.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_mensajes", filter: `destinatario_id=eq.${miId}` }, contar).subscribe();
     window.addEventListener(EVENTO_LEIDO, contar);
     return () => {
