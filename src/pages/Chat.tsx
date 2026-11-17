@@ -123,6 +123,7 @@ function Portada({ onEntrar }: { onEntrar: () => void }) {
         <li>Trata a todos con respeto.</li>
         <li>Nada de spam ni publicidad.</li>
         <li>Los chats privados son solo entre dos personas.</li>
+        <li>Los mensajes se borran solos a las 24 horas.</li>
       </ul>
       {sinLeer > 0 && (
         <p className="chat-portada-aviso">
@@ -657,11 +658,11 @@ function Sala({ onSalir, est }: { onSalir: () => void; est: ReturnType<typeof us
             {ficha.rol !== "superadmin" && ficha.barberia && <p className="suave">{ficha.barberia}</p>}
             {soyAdmin && ficha.id !== miId && (
               <div className="chat-mod">
-                <small>Moderación</small>
+                <small>Moderación · silenciar</small>
                 <div>
                   {[[10, "10 min"], [60, "1 hora"], [1440, "1 día"]].map(([m, t]) => (
                     <button key={m} type="button" className="btn btn-borde btn-chico" onClick={() => void moderar(() => silenciarChat(ficha.id, m as number), `${ficha.nombre} silenciado ${t}`)}>
-                      Silenciar {t}
+                      {t}
                     </button>
                   ))}
                 </div>

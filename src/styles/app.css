@@ -1034,3 +1034,8 @@ html, body { overflow-x: clip; }
 .panel-pro .barra-yo { border-color: var(--oro); }
 .panel-vip .barra-yo { border-color: #8fe3ff; }
 .panel-rojo .barra-yo { border-color: var(--rojo-fs); }
+
+/* Moderación en la ficha: botones parejos, en filas de columnas iguales */
+.chat-mod { text-align: left; }
+.chat-mod > div { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.chat-ficha .chat-mod .btn { width: 100%; max-width: none; margin: 0; padding: 0 8px; min-height: 44px; font-size: 14px; }
