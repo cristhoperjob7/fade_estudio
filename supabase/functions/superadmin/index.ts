@@ -83,5 +83,58 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
+  // 4) Eliminar una barbería por completo. Pide la clave del superadmin y borra datos, archivos y cuentas.
+  if (b.accion === "eliminar_barberia") {
+    const barberiaId = texto(b.barberia_id);
+    const clave = typeof b.clave === "string" ? b.clave : "";
+    if (!barberiaId) return json({ error: "Falta la barbería" }, 400);
+    if (!clave) return json({ error: "Escribe tu clave" }, 400);
+
+    // La clave se comprueba contra tu cuenta, en el servidor.
+    const comprobar = createClient(URL_SUPABASE, Deno.env.get("SUPABASE_ANON_KEY") ?? "", { auth: { persistSession: false } });
+    const { error: errClave } = await comprobar.auth.signInWithPassword({ email: u.user.email ?? "", password: clave });
+    if (errClave) return json({ error: "Tu clave no es correcta" }, 403);
+
+    const { data: bar } = await admin.from("barberias").select("id").eq("id", barberiaId).maybeSingle();
+    if (!bar) return json({ error: "No existe esa barbería" }, 404);
+
+    // Antes de borrar, se anota qué cuentas y archivos tiene (después ya no se puede saber).
+    const { data: perfiles } = await admin.from("perfiles").select("id").eq("barberia_id", barberiaId);
+    const { data: supers } = await admin.from("superadmins").select("usuario_id");
+    const protegidos = new Set<string>([u.user.id, ...(supers ?? []).map((x: { usuario_id: string }) => x.usuario_id)]);
+    const cuentas = (perfiles ?? []).map((p: { id: string }) => p.id).filter((id: string) => !protegidos.has(id));
+
+    const { data: citas } = await admin.from("citas").select("comprobante_path").eq("barberia_id", barberiaId).not("comprobante_path", "is", null);
+    const comprobantes = (citas ?? []).map((c: { comprobante_path: string }) => c.comprobante_path).filter(Boolean);
+    const listar = async (bucket: string, carpeta: string) => {
+      const { data } = await admin.storage.from(bucket).list(carpeta, { limit: 1000 });
+      return (data ?? []).filter((f: { id: string | null }) => f.id).map((f: { name: string }) => `${carpeta}/${f.name}`);
+    };
+    const fotosPagina = await listar("paginas", barberiaId);
+    const fotosPerfil: string[] = [];
+    for (const id of cuentas) fotosPerfil.push(...(await listar("avatares", id)));
+
+    // 1) Base de datos (todo o nada).
+    const { error: errBd } = await admin.rpc("eliminar_barberia_datos", { p_id: barberiaId });
+    if (errBd) return json({ error: "No se pudo borrar: " + errBd.message }, 500);
+
+    // 2) Archivos y cuentas. Si algo falla aquí, los datos ya se borraron: se avisa qué quedó.
+    const pendientes: string[] = [];
+    const borrar = async (bucket: string, rutas: string[]) => {
+      for (let i = 0; i < rutas.length; i += 100) {
+        const { error } = await admin.storage.from(bucket).remove(rutas.slice(i, i + 100));
+        if (error) pendientes.push(`archivos de «${bucket}»`);
+      }
+    };
+    await borrar("paginas", fotosPagina);
+    await borrar("comprobantes", comprobantes);
+    await borrar("avatares", fotosPerfil);
+    for (const id of cuentas) {
+      const { error } = await admin.auth.admin.deleteUser(id);
+      if (error) pendientes.push("una cuenta de acceso");
+    }
+    return json({ ok: true, pendientes: [...new Set(pendientes)] });
+  }
+
   return json({ error: "Acción no válida" }, 400);
 });

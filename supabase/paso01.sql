@@ -21,7 +21,7 @@ create table if not exists public.barberias (
   id             uuid primary key default gen_random_uuid(),
   slug           text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(slug) between 3 and 40),
   nombre         text not null,
-  plan           text not null default 'basico' check (plan in ('basico', 'pro', 'vip')),
+  plan           text not null default 'basico' check (plan in ('basico', 'completo')),
   precio_mensual int  not null default 0 check (precio_mensual >= 0),
   estado         text not null default 'activa' check (estado in ('activa', 'suspendida')),
   vence_el       date,                                    -- último día pagado (null = sin vencimiento)

@@ -50,14 +50,6 @@ Deno.serve(async (req) => {
     if (clave.length < 8) return json({ error: "La clave debe tener al menos 8 caracteres" }, 400);
     if (!Number.isFinite(comision) || comision < 0 || comision > 100) return json({ error: "La comisión debe estar entre 0 y 100" }, 400);
 
-    // Límite del plan (Básico: 1 barbero adicional). El candado final está en la base de datos.
-    const { data: bar } = await admin.from("barberias").select("plan").eq("id", yo.barberia_id).maybeSingle();
-    if (bar?.plan === "basico") {
-      const { count } = await admin.from("perfiles").select("id", { count: "exact", head: true })
-        .eq("barberia_id", yo.barberia_id).eq("rol", "barbero").eq("activo", true);
-      if ((count ?? 0) >= 1) return json({ error: "Tu plan Básico permite 1 barbero adicional. Pásate a Pro para sumar más." }, 403);
-    }
-
     const nuevo = await admin.auth.admin.createUser({ email: correo, password: clave, email_confirm: true });
     if (nuevo.error || !nuevo.data.user) {
       const ya = /already|registered|exists/i.test(nuevo.error?.message ?? "");
@@ -70,7 +62,6 @@ Deno.serve(async (req) => {
     });
     if (error) {
       await admin.auth.admin.deleteUser(id); // no dejar una cuenta a medias
-      if (/LIMITE_PLAN/.test(error.message)) return json({ error: error.message.replace(/^.*LIMITE_PLAN:\s*/, "") }, 403);
       return json({ error: "No se pudo guardar al barbero" }, 500);
     }
     return json({ ok: true, usuario_id: id });
