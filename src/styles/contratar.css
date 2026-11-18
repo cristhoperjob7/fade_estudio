@@ -43,7 +43,7 @@
 
 /* Oferta (precio fundador) */
 .fs-mini.oferta { border-color: #7a6224; background: linear-gradient(180deg, #1d1809, #100d06); }
-.fs-cinta { display: inline-flex; align-items: center; gap: 6px; width: max-content; padding: 5px 11px; border-radius: 999px; background: linear-gradient(90deg, #f0c24f, #e0a93a); color: #1b1405; font-weight: 700; font-size: 12px; letter-spacing: .08em; }
+.fs-oferta-tag { display: inline-flex; align-items: center; gap: 6px; width: max-content; padding: 5px 11px; border-radius: 999px; background: linear-gradient(90deg, #f0c24f, #e0a93a); color: #1b1405; font-weight: 700; font-size: 12px; letter-spacing: .08em; }
 .fs-mini.oferta .fs-mini-precio b { color: var(--oro); }
 .fs-mini-ahorro { color: #8fe0bd; font-size: 14px; }
 .fs-lock { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; background: #f0c24f14; border: 1px solid #f0c24f44; font-size: 13.5px; color: #f5e3b0; }

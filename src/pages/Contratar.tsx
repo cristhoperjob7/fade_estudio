@@ -227,7 +227,7 @@ export default function Contratar() {
                   </button>
                 ))}
               </div>
-              {desc && ciclo !== "prueba" && <span className="fs-cinta">★ PRECIO FUNDADOR −{desc.porcentaje}%</span>}
+              {desc && ciclo !== "prueba" && <span className="fs-oferta-tag">★ PRECIO FUNDADOR −{desc.porcentaje}%</span>}
               <div className="fs-mini-precio" aria-live="polite">
                 {ciclo === "prueba" ? (
                   <>
