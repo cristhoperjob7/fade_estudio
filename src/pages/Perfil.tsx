@@ -11,7 +11,9 @@ import Pestanitas from "../components/Pestanitas";
 import { useToast } from "../components/Toast";
 import { useAjusteChat } from "../lib/chat";
 import { hapticaDisponible, useHaptica } from "../lib/haptica";
-import { guardarDatos, quitarFoto, subirFoto, useMiPerfil } from "../lib/perfil";
+import FormularioDatos, { validarDatos, valoresDesde } from "../components/FormularioDatos";
+import type { ErroresDatos, ValoresDatos } from "../components/FormularioDatos";
+import { guardarDatosCompletos, quitarFoto, subirFoto, useMiPerfil } from "../lib/perfil";
 type Pestana = "datos" | "clave" | "chat" | "avisos";
 const ROL_TEXTO = { dueno: "Dueño", barbero: "Barbero", superadmin: "Superadmin" } as const;
 
@@ -27,16 +29,12 @@ export default function Perfil() {
   const ajusteChat = useAjusteChat();
   const [hapOn, setHap] = useHaptica();
   const [tab, setTab] = useState<Pestana>("datos");
-  const [f, setF] = useState({ nombre: "", apellidos: "", telefono: "", edad: "" });
+  const [f, setF] = useState<ValoresDatos>(() => valoresDesde(null));
+  const [errores, setErrores] = useState<ErroresDatos>({});
 
   const restaurar = () => {
-    if (!datos) return;
-    setF({
-      nombre: datos.nombre,
-      apellidos: datos.apellidos,
-      telefono: datos.telefono,
-      edad: datos.edad ? String(datos.edad) : "",
-    });
+    setF(valoresDesde(datos));
+    setErrores({});
   };
   useEffect(restaurar, [datos]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -73,14 +71,15 @@ export default function Perfil() {
   }
 
   async function guardar(): Promise<boolean> {
-    const edad = f.edad.trim() === "" ? null : Number(f.edad);
-    if (edad !== null && (!Number.isInteger(edad) || edad < 10 || edad > 110)) {
-      avisar("Revisa tu edad", "error");
+    const er = validarDatos(f);
+    setErrores(er);
+    if (Object.keys(er).length) {
+      avisar("Revisa los campos marcados", "error");
       return false;
     }
     setGuardando(true);
     try {
-      await guardarDatos({ nombre: f.nombre, apellidos: f.apellidos, telefono: f.telefono, edad });
+      await guardarDatosCompletos({ nombre: f.nombre.trim(), apellidos: f.apellidos.trim(), celular: f.celular, sexo: f.sexo, region: f.region, comuna: f.comuna, edad: Number(f.edad) });
       avisar("Datos guardados");
       return true;
     } catch (err) {
@@ -134,6 +133,8 @@ export default function Perfil() {
             { etiqueta: "Apellidos", valor: datos.apellidos },
             { etiqueta: "Celular", valor: datos.telefono ? formatearTelefono(datos.telefono) : "" },
             { etiqueta: "Edad", valor: datos.edad ? `${datos.edad} años` : "" },
+            { etiqueta: "Sexo", valor: datos.sexo === "femenino" ? "Femenino" : datos.sexo === "masculino" ? "Masculino" : "" },
+            { etiqueta: "Región y comuna", valor: datos.comuna ? `${datos.comuna}, ${datos.region}` : "" },
             { etiqueta: "Correo", valor: datos.correo },
             ...(datos.rol === "barbero" && perfil ? [{ etiqueta: "Comisión", valor: `${perfil.comision_pct}%` }] : []),
           ]}
@@ -142,27 +143,7 @@ export default function Perfil() {
           guardando={guardando}
           textoEditar="Editar mis datos"
         >
-          <div className="fila2">
-            <label className="campo">
-              <span>Nombre</span>
-              <input value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} maxLength={60} autoComplete="given-name" required />
-            </label>
-            <label className="campo">
-              <span>Apellidos</span>
-              <input value={f.apellidos} onChange={(e) => setF({ ...f, apellidos: e.target.value })} maxLength={60} autoComplete="family-name" />
-            </label>
-          </div>
-          <div className="fila2">
-            <label className="campo">
-              <span>Celular</span>
-              <input value={f.telefono} onChange={(e) => setF({ ...f, telefono: e.target.value })} inputMode="tel" placeholder="+56 9 1234 5678" autoComplete="tel" />
-            </label>
-            <label className="campo">
-              <span>Edad</span>
-              <input value={f.edad} onChange={(e) => setF({ ...f, edad: e.target.value.replace(/\D/g, "").slice(0, 3) })} inputMode="numeric" placeholder="Ej: 28" />
-            </label>
-          </div>
-          <p className="suave chico">El correo es con el que entras y no se cambia aquí.</p>
+          <FormularioDatos v={f} onCambio={(n) => { setF(n); if (Object.keys(errores).length) setErrores(validarDatos(n)); }} errores={errores} correo={datos.correo} />
         </Ficha>
       ) : tab === "chat" ? (
         <div className="chat-ajuste">

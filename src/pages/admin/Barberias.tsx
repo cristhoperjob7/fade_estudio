@@ -223,6 +223,18 @@ function Nueva({ onCerrar, onListo, inicial }: { onCerrar: () => void; onListo: 
     setOcupado(false);
     if (motivo) return setError(motivo);
     if (region && comuna) await supabase.from("barberias").update({ region, comuna }).eq("slug", slug);
+    if (inicial?.apellido && inicial.edad && inicial.sexo && inicial.region && inicial.comuna) {
+      // El dueño ya queda con los datos que escribió al contratar (si no, los completa al entrar).
+      const { data: nueva } = await supabase.from("barberias").select("id").eq("slug", slug).maybeSingle();
+      const ap = inicial.apellido.trim();
+      const nom = inicial.contacto.endsWith(ap) ? inicial.contacto.slice(0, inicial.contacto.length - ap.length).trim() : inicial.contacto;
+      if (nueva) {
+        await supabase.rpc("admin_completar_perfil_dueno", {
+          p_barberia: (nueva as { id: string }).id, p_nombre: nom, p_apellidos: ap, p_celular: inicial.telefono ?? "",
+          p_sexo: inicial.sexo, p_region: inicial.region, p_comuna: inicial.comuna, p_edad: inicial.edad,
+        });
+      }
+    }
     if (inicial) await supabase.rpc("admin_estado_solicitud", { p_id: inicial.id, p_estado: "creada" });
     if (inicial?.descuento_codigo) {
       const { data: nueva } = await supabase.from("barberias").select("id").eq("slug", slug).maybeSingle();

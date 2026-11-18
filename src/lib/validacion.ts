@@ -55,3 +55,14 @@ export function validarCorreo(v: string): string {
 }
 
 export const validarObligatorio = (v: string, mensaje: string) => (v ? "" : mensaje);
+
+/** Deja solo 2 números (la edad). */
+export const soloDosDigitos = (entrada: string) => entrada.replace(/\D/g, "").slice(0, 2);
+
+export function validarEdad(v: string): string {
+  if (!v) return "Escribe tu edad.";
+  if (!/^\d{2}$/.test(v)) return "La edad son 2 números, entre 16 y 90.";
+  const n = Number(v);
+  if (n < 16 || n > 90) return "La edad debe estar entre 16 y 90 años.";
+  return "";
+}

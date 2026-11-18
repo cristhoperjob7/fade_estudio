@@ -8,16 +8,16 @@ import { enlaceWhatsapp } from "../lib/whatsapp";
 import { DIAS_PRUEBA, usePlanes } from "../lib/planes";
 import type { PlanClave } from "../lib/planes";
 import { NOMBRES_REGION, REGIONES } from "../lib/chile";
-import { DOMINIOS_CORREO, limpiar, soloOchoDigitos, validarBarberia, validarCelular, validarCorreo, validarNombre, validarObligatorio } from "../lib/validacion";
+import { DOMINIOS_CORREO, limpiar, soloDosDigitos, soloOchoDigitos, validarBarberia, validarCelular, validarCorreo, validarEdad, validarNombre, validarObligatorio } from "../lib/validacion";
 import { CabeceraPortada, Ic, PiePortada } from "../components/Portada";
 import "../styles/landing.css";
 import "../styles/contratar.css";
 
 const SOPORTE = ((import.meta.env.VITE_SOPORTE_WHATSAPP as string | undefined) ?? "").replace(/\D/g, "");
 type Ciclo = "mensual" | "anual" | "prueba";
-type Campo = "nombre" | "apellido" | "barberia" | "celular" | "sexo" | "correo" | "region" | "comuna";
+type Campo = "nombre" | "apellido" | "barberia" | "celular" | "edad" | "sexo" | "correo" | "region" | "comuna";
 /** Orden de los campos en pantalla (sirve para llevar el cursor al primer error). */
-const ORDEN: Campo[] = ["nombre", "apellido", "barberia", "celular", "sexo", "correo", "region", "comuna"];
+const ORDEN: Campo[] = ["nombre", "apellido", "barberia", "celular", "edad", "sexo", "correo", "region", "comuna"];
 
 const CLAVES: PlanClave[] = ["basico", "pro", "vip"];
 const esPlan = (x: string | null): x is PlanClave => !!x && (CLAVES as string[]).includes(x);
@@ -32,7 +32,7 @@ export default function Contratar() {
   const pedido: Ciclo = esCiclo(q.get("ciclo")) ? (q.get("ciclo") as Ciclo) : "mensual";
   const [ciclo, setCiclo] = useState<Ciclo>(pedido === "prueba" && plan !== "basico" ? "mensual" : pedido);
 
-  const [v, setV] = useState({ nombre: "", apellido: "", barberia: "", celular: "", sexo: "", correo: "", region: "", comuna: "" });
+  const [v, setV] = useState({ nombre: "", apellido: "", barberia: "", celular: "", edad: "", sexo: "", correo: "", region: "", comuna: "" });
   const [tocado, setTocado] = useState<Partial<Record<Campo, boolean>>>({});
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -64,6 +64,7 @@ export default function Contratar() {
     apellido: validarNombre(v.apellido, "tu apellido"),
     barberia: validarBarberia(v.barberia),
     celular: validarCelular(v.celular),
+    edad: validarEdad(v.edad),
     sexo: validarObligatorio(v.sexo, "Elige una opción."),
     correo: validarCorreo(v.correo),
     region: validarObligatorio(v.region, "Elige tu región."),
@@ -103,6 +104,7 @@ export default function Contratar() {
       p_apellido: limpiar(v.apellido),
       p_barberia: limpiar(v.barberia),
       p_celular: v.celular,
+      p_edad: Number(v.edad),
       p_sexo: v.sexo,
       p_correo: v.correo.trim().toLowerCase(),
       p_region: v.region,
@@ -303,21 +305,28 @@ export default function Contratar() {
               {msg("celular")}
             </label>
 
-            <fieldset className="fs-sexo" id="c-sexo" tabIndex={-1} aria-invalid={!!mostrar("sexo")} onBlur={() => tocar("sexo")}>
-              <legend>Sexo</legend>
-              <div>
-                {[
-                  ["masculino", "Masculino"],
-                  ["femenino", "Femenino"],
-                ].map(([val, t]) => (
-                  <label key={val} className={v.sexo === val ? "on" : ""}>
-                    <input type="radio" name="sexo" value={val} checked={v.sexo === val} onChange={() => poner("sexo", val!)} />
-                    {t}
-                  </label>
-                ))}
-              </div>
-              {msg("sexo")}
-            </fieldset>
+            <div className="fs-par">
+              <label>
+                <span>Edad</span>
+                <input {...props("edad")} type="text" inputMode="numeric" placeholder="Ej. 28" value={v.edad} onChange={(e) => poner("edad", soloDosDigitos(e.target.value))} maxLength={4} autoComplete="off" enterKeyHint="next" />
+                {mostrar("edad") ? msg("edad") : <small className="fs-ayuda">De 16 a 90 años</small>}
+              </label>
+              <fieldset className="fs-sexo" id="c-sexo" tabIndex={-1} aria-invalid={!!mostrar("sexo")} onBlur={() => tocar("sexo")}>
+                <legend>Sexo</legend>
+                <div>
+                  {[
+                    ["masculino", "Masculino"],
+                    ["femenino", "Femenino"],
+                  ].map(([val, t]) => (
+                    <label key={val} className={v.sexo === val ? "on" : ""}>
+                      <input type="radio" name="sexo" value={val} checked={v.sexo === val} onChange={() => poner("sexo", val!)} />
+                      {t}
+                    </label>
+                  ))}
+                </div>
+                {msg("sexo")}
+              </fieldset>
+            </div>
 
             <label>
               <span>Correo</span>

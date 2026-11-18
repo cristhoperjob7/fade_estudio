@@ -17,6 +17,7 @@ import PlanDueno from "./pages/dueno/Plan";
 import AgendaGeneral from "./pages/dueno/AgendaGeneral";
 import Equipo from "./pages/dueno/Equipo";
 import Perfil from "./pages/Perfil";
+import RequiereDatos from "./components/RequiereDatos";
 import Chat from "./pages/Chat";
 import Landing from "./pages/Landing";
 import Vencida from "./pages/Vencida";
@@ -69,7 +70,7 @@ function RequiereSesion() {
   if (!sesion) return <Navigate to="/login" replace />;
   if (!perfil) return <Navigate to={esAdmin ? "/admin" : "/login"} replace />; // el login explica por qué no tiene acceso
   if (barberia && !barberia.vigente) return <Vencida />;
-  return <Outlet />;
+  return <RequiereDatos><Outlet /></RequiereDatos>;
 }
 
 /** Solo el superadmin de Fade Studio. */
@@ -78,7 +79,7 @@ function RequiereAdmin() {
   if (cargando) return <Cargando />;
   if (!sesion) return <Navigate to="/login" replace />;
   if (!esAdmin) return <Navigate to="/panel" replace />;
-  return <Outlet />;
+  return <RequiereDatos><Outlet /></RequiereDatos>;
 }
 
 function RequiereRol({ rol }: { rol: Rol }) {

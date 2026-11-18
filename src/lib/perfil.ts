@@ -9,6 +9,11 @@ export type MiPerfil = {
   correo: string;
   edad: number | null;
   avatar_path: string | null;
+  sexo?: "masculino" | "femenino" | null;
+  region?: string;
+  comuna?: string;
+  /** Solo viene después de ejecutar paso29; si falta, no se bloquea a nadie. */
+  completo?: boolean;
 };
 
 const EVENTO = "fs-perfil-cambio";
@@ -51,6 +56,21 @@ export async function guardarDatos(d: { nombre: string; apellidos: string; telef
     p_nombre: d.nombre,
     p_apellidos: d.apellidos,
     p_telefono: d.telefono,
+    p_edad: d.edad,
+  });
+  if (error) throw new Error(error.message);
+  avisarCambioPerfil();
+}
+
+/** Guarda todos los datos personales (la base vuelve a validar cada campo). */
+export async function guardarDatosCompletos(d: { nombre: string; apellidos: string; celular: string; sexo: string; region: string; comuna: string; edad: number }) {
+  const { error } = await supabase.rpc("guardar_mi_perfil_completo", {
+    p_nombre: d.nombre,
+    p_apellidos: d.apellidos,
+    p_celular: d.celular,
+    p_sexo: d.sexo,
+    p_region: d.region,
+    p_comuna: d.comuna,
     p_edad: d.edad,
   });
   if (error) throw new Error(error.message);
